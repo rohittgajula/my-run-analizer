@@ -1,0 +1,113 @@
+name: my-run-analizer
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-runanalizer}
+      POSTGRES_USER: ${POSTGRES_USER:-runanalizer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-runanalizer}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      # Host port defaults off 5432 so a local Postgres can keep running.
+      - "${POSTGRES_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-runanalizer}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    # The image's own CMD is gunicorn. Development overrides it here, so a
+    # development server is never what ships.
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    environment: &backend_env
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-insecure-key-change-me}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
+      POSTGRES_DB: ${POSTGRES_DB:-runanalizer}
+      POSTGRES_USER: ${POSTGRES_USER:-runanalizer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-runanalizer}
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379/0
+      CORS_ALLOWED_ORIGINS: http://localhost:${FRONTEND_PORT:-5173}
+      GARMIN_TOKEN_DIR: /app/.garmin
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      GEMINI_LITE_MODEL: ${GEMINI_LITE_MODEL:-}
+      GEMINI_FAST_MODEL: ${GEMINI_FAST_MODEL:-}
+      GEMINI_COACH_MODEL: ${GEMINI_COACH_MODEL:-}
+      GEMINI_DEEP_MODEL: ${GEMINI_DEEP_MODEL:-}
+    volumes:
+      # Code is bind-mounted and reloads. Python DEPENDENCIES LIVE IN THE IMAGE:
+      # after editing requirements.txt you must `docker compose build backend` and
+      # `up -d --force-recreate backend worker beat`. A plain `up -d` will not pick
+      # them up, and the failure looks like a ModuleNotFoundError in code you just
+      # verified.
+      - ./backend:/app
+      - garmin_tokens:/app/.garmin
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    healthcheck:
+      # Backend runs migrate before runserver, so "healthy" also means the schema
+      # exists. worker and beat gate on this: started any earlier, beat queries
+      # django_celery_beat_periodictask before the table is created and exits 1.
+      test: ["CMD", "curl", "-fs", "http://localhost:8000/api/health/"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  worker:
+    build: ./backend
+    command: celery -A config worker -l info -Q celery,garmin,metrics,ai,planning
+    environment: *backend_env
+    volumes:
+      - ./backend:/app
+      - garmin_tokens:/app/.garmin
+    depends_on:
+      backend: { condition: service_healthy }
+
+  beat:
+    build: ./backend
+    command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    environment: *backend_env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      backend: { condition: service_healthy }
+
+  frontend:
+    build: ./frontend
+    command: npm run dev
+    environment:
+      VITE_PROXY_TARGET: http://backend:8000
+    volumes:
+      - ./frontend:/app
+      # Keep the image's node_modules; the bind mount would otherwise hide them.
+      - /app/node_modules
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    depends_on:
+      backend: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  garmin_tokens:

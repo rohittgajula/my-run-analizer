@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Django
+*.sqlite3
+/backend/media/
+/backend/staticfiles/
+
+# Node
+node_modules/
+/frontend/dist/
+/frontend/.vite/
+
+# Secrets — never commit
+.env
+.env.local
+*.pem
+garmin_tokens.json
+oauth1_token.json
+oauth2_token.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

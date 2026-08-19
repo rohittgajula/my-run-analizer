@@ -1,0 +1,35 @@
+# Pins mirror run-project's proven set where a version is already known-good
+# together. Newer ones use ranges rather than a guessed pin. Bump deliberately,
+# one at a time, and re-run the tests.
+
+Django==5.1.4
+djangorestframework==3.15.2
+django-cors-headers==4.6.0
+django-filter==24.3
+dj-database-url==2.3.0
+psycopg[binary]==3.2.3
+gunicorn==23.0.0
+python-dotenv==1.0.1
+
+celery==5.4.0
+redis==5.2.1
+django-celery-beat==2.7.0
+
+# Garmin. 0.3.10 is pinned deliberately: 0.2.x reads oauth1_token.json while
+# 0.3.x writes a combined garmin_tokens.json. Mixing them fails confusingly, so
+# every tool that touches the token directory must be on this exact version.
+garminconnect==0.3.10
+fitparse==1.2.0
+curl-cffi==0.16.0
+
+# AI layer. Pydantic models generate the request schema, validate the response,
+# and type the rest of the code — one definition, three jobs.
+pydantic>=2.9,<3
+google-genai>=1.0,<3
+anthropic>=0.40,<1
+httpx>=0.27,<1
+
+# dev
+pytest==8.3.4
+pytest-django>=4.9,<5
+hypothesis>=6.100,<7

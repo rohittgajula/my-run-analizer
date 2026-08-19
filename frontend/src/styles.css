@@ -1,0 +1,142 @@
+/* Pitch black. Not "dark navy" — #000 exactly, so on an OLED phone those pixels are
+   genuinely off and the accent appears to float. That only works if the accent is
+   the ONLY saturated thing on screen, so colour here is rationed: green means good,
+   and nothing else is coloured just for decoration. */
+
+:root {
+  --bg: #000000;
+  --surface: #0a0a0c;
+  --surface-hi: #101015;
+  --border: #1c1c22;
+  --border-hi: #2a2a33;
+
+  --text: #f5f5f7;
+  --muted: #6e6e7a;
+
+  --accent: #00f5a0;
+  --accent-dim: #00b878;
+  --accent-glow: rgba(0, 245, 160, 0.14);
+
+  --bad: #ff4d6d;
+  --warn: #ffb800;
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--bg); }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* Respect the notch once installed to an iOS home screen. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left);
+  min-height: 100dvh;
+}
+
+/* A single wash of accent behind the top of the page. Pure black with flat cards
+   reads as unfinished; one soft gradient gives it depth without adding a colour
+   the eye has to interpret. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -30vh 0 auto 0;
+  height: 60vh;
+  background: radial-gradient(60% 60% at 50% 50%, var(--accent-glow), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 3rem 1.25rem 4rem;
+}
+
+.header { margin-bottom: 2rem; }
+
+h1 {
+  font-size: 1.75rem;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.02em;
+  font-weight: 650;
+}
+
+/* The accent appears in exactly one glyph in the wordmark. */
+h1 .mark { color: var(--accent); }
+
+h2 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin: 0 0 0.9rem;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.875rem;
+  padding: 1.25rem 1.35rem;
+  margin-bottom: 0.875rem;
+}
+.card p { margin: 0 0 0.75rem; }
+.card p:last-child { margin-bottom: 0; }
+
+/* Reserved for the one card that should pull the eye. */
+.card-accent {
+  border-color: var(--border-hi);
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(160deg, var(--accent-dim), transparent 45%) border-box;
+  border: 1px solid transparent;
+}
+
+.muted { color: var(--muted); }
+.bad { color: var(--bad); overflow-wrap: anywhere; }
+
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.7rem; }
+.checks li { display: flex; align-items: center; gap: 0.7rem; font-variant-numeric: tabular-nums; }
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex: none;
+}
+/* The glow is the signal, not the dot — at 8px a colour alone is easy to miss. */
+.dot-ok  { background: var(--accent); box-shadow: 0 0 0 3px rgba(0, 245, 160, 0.15); }
+.dot-bad { background: var(--bad);    box-shadow: 0 0 0 3px rgba(255, 77, 109, 0.15); }
+
+.button {
+  font: inherit;
+  font-weight: 600;
+  color: #00110a;
+  background: var(--accent);
+  border: 0;
+  border-radius: 0.55rem;
+  padding: 0.65rem 1.2rem;
+  cursor: pointer;
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+}
+.button:hover { filter: brightness(1.1); box-shadow: 0 0 24px rgba(0, 245, 160, 0.25); }
+.button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+code {
+  background: var(--surface-hi);
+  border: 1px solid var(--border);
+  padding: 0.12em 0.4em;
+  border-radius: 0.3rem;
+  font-size: 0.88em;
+  color: var(--text);
+}
+
+strong { color: var(--text); font-weight: 600; }
