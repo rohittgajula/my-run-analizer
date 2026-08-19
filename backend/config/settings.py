@@ -135,21 +135,24 @@ CELERY_TASK_QUEUES_NAMES = ["garmin", "metrics", "ai", "planning"]
 GARMIN_TOKEN_DIR = os.environ.get("GARMIN_TOKEN_DIR", "/app/.garmin")
 
 # --- AI ----------------------------------------------------------------------
-# Model IDs are never hardcoded anywhere in application code. Operations name a
-# TIER; the tier resolves to an ID here. Upgrading a model is an .env edit.
+# One provider is active at a time. Operations name a TIER, never a model ID, so
+# switching provider or upgrading a model is an .env edit rather than a code change.
+# M6 adds a second provider behind the same interface as a test that the seam holds.
+AI_PROVIDER = os.environ.get("AI_PROVIDER", "openai")
+
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-AI_PROVIDER = os.environ.get("AI_PROVIDER", "gemini")
 
 AI_MODELS = {
-    "lite": os.environ.get("GEMINI_LITE_MODEL", ""),
-    "fast": os.environ.get("GEMINI_FAST_MODEL", ""),
-    "coach": os.environ.get("GEMINI_COACH_MODEL", ""),
-    "deep": os.environ.get("GEMINI_DEEP_MODEL", ""),
+    "lite": os.environ.get("AI_LITE_MODEL", ""),
+    "fast": os.environ.get("AI_FAST_MODEL", ""),
+    "coach": os.environ.get("AI_COACH_MODEL", ""),
+    "deep": os.environ.get("AI_DEEP_MODEL", ""),
 }
 
 AI_MODEL_TIERS = {
-    "journal_extract": "lite",
+    "journal_extract": "fast",
     "run_analysis": "fast",
     "weekly_review": "coach",
     "plan_generation": "coach",

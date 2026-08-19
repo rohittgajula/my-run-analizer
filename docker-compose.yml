@@ -45,13 +45,13 @@ services:
       REDIS_URL: redis://redis:6379/0
       CORS_ALLOWED_ORIGINS: http://localhost:${FRONTEND_PORT:-5173}
       GARMIN_TOKEN_DIR: /app/.garmin
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      AI_PROVIDER: ${AI_PROVIDER:-gemini}
-      GEMINI_LITE_MODEL: ${GEMINI_LITE_MODEL:-}
-      GEMINI_FAST_MODEL: ${GEMINI_FAST_MODEL:-}
-      GEMINI_COACH_MODEL: ${GEMINI_COACH_MODEL:-}
-      GEMINI_DEEP_MODEL: ${GEMINI_DEEP_MODEL:-}
+      AI_LITE_MODEL: ${AI_LITE_MODEL:-}
+      AI_FAST_MODEL: ${AI_FAST_MODEL:-}
+      AI_COACH_MODEL: ${AI_COACH_MODEL:-}
+      AI_DEEP_MODEL: ${AI_DEEP_MODEL:-}
     volumes:
       # Code is bind-mounted and reloads. Python DEPENDENCIES LIVE IN THE IMAGE:
       # after editing requirements.txt you must `docker compose build backend` and

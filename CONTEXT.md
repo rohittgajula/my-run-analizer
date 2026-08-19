@@ -72,7 +72,7 @@ retyped. Solved problem, no learning value left in it.
 |---|---|
 | Target race | **13 Dec 2026, 10K.** Reference data only — nothing structural may hardcode it. |
 | Second race | **3 Jan 2027**, three weeks later. Multi-race is a requirement, not a later feature. |
-| Gemini tier | **Paid from day one.** ~₹30–65/month — see [docs/COST.md](docs/COST.md). Free tier's data terms are not worth ₹40 on sleep, pain and mood logs. |
+| AI provider | **OpenAI**, on $5 of prepaid API credit. Google Cloud billing needs a recurring-charge mandate, which Indian cards routinely decline; OpenAI sells prepaid credits instead. See [docs/COST.md](docs/COST.md). |
 | Garmin auth | **Connect fresh** from this app's UI. No token sharing with `run-project`. |
 | Pushing | **Rohit only.** Claude commits locally, never pushes. |
 | Journal | **Mandatory after every run**, and an input to scheduling *and* prediction. |
@@ -192,9 +192,12 @@ Pydantic pulled in **specifically** for AI response validation.
 **Frontend** — React 18 + TypeScript + Vite + TanStack Query + Recharts, **plus PWA**
 (`vite-plugin-pwa`).
 
-**AI** — Gemini primary, behind a provider-agnostic interface. Model IDs live in env
-(`GEMINI_LITE_MODEL` / `GEMINI_FAST_MODEL` / `GEMINI_COACH_MODEL` / `GEMINI_DEEP_MODEL`),
-never hardcoded. A second provider lands at M6 to prove the seam is real.
+**AI** — OpenAI (`gpt-5.6-terra`) behind a provider-agnostic interface. Model IDs live
+in env as `AI_LITE_MODEL` / `AI_FAST_MODEL` / `AI_COACH_MODEL` / `AI_DEEP_MODEL` —
+provider-neutral names, because one provider is active at a time and operations name a
+*tier*, never an ID. All four point at one model until the M6 eval suite can prove a
+cheaper one does the job. Gemini becomes the second provider at M6, on its free tier,
+where the data terms are moot because it only ever sees synthetic fixtures.
 
 **Everything runs under `docker compose`** from day one.
 
@@ -256,8 +259,8 @@ Tests: `docker compose exec backend python -m pytest tests/ -q`.
 A plain `up -d` does not pick them up and the failure looks like a `ModuleNotFoundError`
 in code you just verified.
 
-`.env` is gitignored and already copied from `.env.example`. **Add `GEMINI_API_KEY` and
-the four model IDs there** — nothing reads a model name from code.
+`.env` is gitignored and already copied from `.env.example`. **Add `OPENAI_API_KEY` there** — the four
+model IDs are already filled in, and nothing reads a model name from code.
 
 ## Current state
 
@@ -314,7 +317,9 @@ on a laptop will not prove it.
 | 2026-08-19 | Segmentation is the foundation, not a metric | The 2.5 km / 1.0 km gap makes every unsegmented number wrong. |
 | 2026-08-19 | Prediction ships as a gated range | Wanted and useful; a point estimate off 6 runs would be fiction. |
 | 2026-08-19 | Journal mandatory, gates run analysis | Highest-value input, and the only one Garmin cannot supply. |
-| 2026-08-19 | Paid Gemini from day one | ₹30–65/month. Free tier trains on health logs; not a trade worth ₹40. |
+| 2026-08-19 | ~~Paid Gemini from day one~~ → **OpenAI on prepaid credit** | Google Cloud billing needs a recurring-charge mandate that Indian cards decline. OpenAI's prepaid credits avoid the mechanism entirely. Reversed the same day, before any code depended on it. |
+| 2026-08-19 | One model across all four tiers | `gpt-5.6-terra` everywhere. Splitting tiers before the M6 eval suite can measure quality is optimising blind — and it keeps output changes attributable to the prompt, not the model. |
+| 2026-08-19 | Journal extraction on the *strong* model, not the cheap one | It reads casual code-switched Hindi/English and is where pain gets detected. Putting the hardest reading task on the weakest model to save ₹5/month is the wrong axis. |
 | 2026-08-19 | Claude never touches git | Rohit owns staging, commits, history and the remote. |
 | 2026-08-19 | M0 scaffolds the shell only | No apps, no routing beyond one health URL. Pre-creating apps would be Claude writing the backend by the back door. |
 | 2026-08-19 | Frontend deps resolved by npm, not pinned by guess | React 19, TS 7, Vite 6, vite-plugin-pwa 1.3 — real current versions in `package-lock.json`. |

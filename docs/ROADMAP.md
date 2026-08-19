@@ -354,15 +354,19 @@ to be doing.
 
 ### Step 1 — one raw HTTP call, no SDK
 
-A throwaway script. `httpx.post` to the Gemini REST endpoint. Print the whole response.
+A throwaway script. `httpx.post` to the OpenAI REST endpoint. Print the whole response.
 
-Read the JSON. Find `candidates`, `content.parts`, `finishReason`, `usageMetadata`. Then
+Read the JSON. Find `choices`, `message.content`, `finish_reason`, `usage`. Then
 deliberately break things: bad model name, malformed body, a prompt that trips a safety
 filter. **The failure shapes are the thing you are learning** — every retry and fallback
 you write later is a reaction to one of them.
 
-Note especially: a `200 OK` can carry `finishReason: MAX_TOKENS` or `SAFETY` with
+Note especially: a `200 OK` can carry `finish_reason: "length"` or a refusal with
 truncated or empty content. HTTP status is not success.
+
+Check `usage` against the visible response length on this very first call. If reported
+output tokens far exceed what you can see, the model is billing reasoning tokens and
+[COST.md](COST.md) needs revising — better to learn that on call one.
 
 ### Step 2 — the SDK, client cached
 
@@ -370,12 +374,13 @@ truncated or empty content. HTTP status is not success.
 # coaching/client.py
 _CLIENTS: dict[str, Any] = {}
 
-def get_client(provider: str = "gemini"):
-    """Cached. NEVER construct inline.
+def get_client(provider: str = "openai"):
+    """Cached. NEVER construct a client inline.
 
-    genai.Client().models.generate_content(...) as one expression lets the client
-    be garbage-collected mid-request. It closes its httpx pool on the way out and
-    the call dies with 'client has been closed'. This cost run-project real time.
+    Constructing and using a client in one expression lets it be garbage-collected
+    mid-request; it closes its httpx pool on the way out and the call dies with
+    'client has been closed'. This cost run-project real time on the Gemini SDK,
+    and the same shape of bug exists in any SDK holding a connection pool.
     """
 ```
 
@@ -385,8 +390,9 @@ Start here rather than with run analysis. Small input, small structured output, 
 obvious schema, and easy to eval — the ideal first structured-output exercise. It is also
 on the critical path, since M7 gates run analysis on a journal entry.
 
-Force structured output with `response_mime_type="application/json"` and a
-`response_schema`. Do not ask for JSON in the prompt and parse what comes back.
+Use OpenAI's **Structured Outputs** with `strict: true`, not a prompt asking politely
+for JSON. Strict mode constrains decoding, so malformed JSON stops being a failure mode
+you have to handle rather than one you merely hope against.
 
 ```python
 # coaching/schemas.py — Pydantic models ARE the schema
@@ -417,10 +423,16 @@ reworded, re-check this case first.
 One Pydantic model used three ways: it generates the schema sent to the API, validates
 what comes back, and types the rest of your code. That is the pattern to internalise.
 
-Two traps: Gemini's schema dialect is a **subset** of JSON Schema — no `$ref`, limited
-`anyOf` — so keep models flat and avoid recursion. And a schema-constrained response can
-still be *semantically* wrong: valid enum, invented number. Structure is not truth, which
-is why M5 exists.
+Two things to know. Strict mode requires every field to be `required` and every object
+to set `additionalProperties: false` — optional fields are expressed as a union with
+`null`, which is why `rpe` above is `int | None` rather than a field with a default.
+
+And a schema-constrained response can still be *semantically* wrong: valid enum, invented
+number, confident nonsense. Structure is not truth, which is why M5 exists.
+
+(Had this stayed on Gemini, models would additionally have had to be flat and
+non-recursive — its `response_schema` accepts only a subset of JSON Schema, with no
+`$ref`. Worth remembering when Gemini arrives as the second provider at M6.)
 
 ### Step 4 — the context builder, where the real skill is
 
@@ -545,18 +557,30 @@ class CoachProvider(Protocol):
     def generate(self, prompt: str, schema: type[BaseModel], tier: str) -> BaseModel: ...
 ```
 
-Implement Gemini, then implement Claude — not for redundancy, **as a test of the seam**.
+Implement OpenAI, then implement Gemini — not for redundancy, **as a test of the seam**.
 If the second provider forces changes outside `providers/`, the abstraction leaked and you
 found out now rather than at the migration.
 
-Tiers stay in env, mapped per operation:
+Gemini is the right second provider precisely *because* its schema dialect is stricter
+about what it accepts. An abstraction that only ever faced OpenAI's permissive schemas
+would not be tested at all. Its free tier is fine here — eval fixtures are synthetic, so
+the free tier's data terms never touch a real journal entry.
+
+Tiers stay in env, mapped per operation. Note `journal_extract` is **not** on `lite`:
+it reads casual code-switched Hindi/English and is where pain gets detected, so it goes
+on the strong model despite being the highest-frequency call.
 
 ```python
 MODEL_TIERS = {
-    "journal_extract": "lite", "run_analysis": "fast", "weekly_review": "coach",
+    "journal_extract": "fast", "run_analysis": "fast", "weekly_review": "coach",
     "plan_generation": "coach", "monthly_review": "deep", "summary": "lite",
 }
 ```
+
+**Run eval iteration on the cheap model.** A full 40-fixture pass costs ~$0.58 on
+`gpt-5.6-terra` against ~$0.06 on `gpt-5.6-luna`, and eight full passes is the entire
+$5 balance. Structural assertions are largely model-independent, so iterate on Luna and
+confirm the shipping prompt version on Terra.
 
 ### Eval harness — the part most people skip
 
