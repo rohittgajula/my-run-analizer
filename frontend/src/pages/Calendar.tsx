@@ -1,19 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { api } from '../lib/auth'
+import { DayDetail, type CalendarDay } from '../components/DayDetail'
 import { duration } from '../lib/format'
 
-type Day = {
-  date: string
-  mode: string
-  is_today: boolean
-  race: { name: string; distance_km: number } | null
-  planned: { kind: string; run_minutes: number; walk_minutes: number } | null
-  activities: Array<{ id: number; sport: string; logged_km: number; run_m: number | null; longest_run_s: number | null }>
-  readiness: number | null
-  has_note: boolean
-}
+type Day = CalendarDay
+
 type Month = { month: string; leading_blanks: number; days: Day[] }
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -35,6 +27,7 @@ function shift(month: string, by: number): string {
 
 export default function Calendar() {
   const [month, setMonth] = useState<string | null>(null)
+  const [selected, setSelected] = useState<Day | null>(null)
   const { data, isPending } = useQuery({
     queryKey: ['calendar', month],
     queryFn: () => api<Month>(`/plan/calendar/${month ? `?month=${month}` : ''}`),
@@ -73,9 +66,13 @@ export default function Calendar() {
         ))}
 
         {data.days.map((cell) => (
-          <div
+          <button
               key={cell.date}
-              className={`cal-cell mode-${cell.mode} ${cell.is_today ? 'cal-today' : ''}`}
+              type="button"
+              onClick={() => setSelected(cell)}
+              className={`cal-cell mode-${cell.mode} ${cell.is_today ? 'cal-today' : ''} ${
+                selected?.date === cell.date ? 'cal-selected' : ''
+              }`}
             >
               <div className="cal-top">
                 <span className="cal-date">{Number(cell.date.slice(-2))}</span>
@@ -101,7 +98,7 @@ export default function Calendar() {
               )}
 
               {cell.activities.map((activity) => (
-                <Link key={activity.id} to={`/activities/${activity.id}`} className="cal-actual">
+                <span key={activity.id} className="cal-actual">
                   {activity.run_m ? (
                     <>
                       <span className="data">{activity.run_m} m</span>
@@ -112,13 +109,15 @@ export default function Calendar() {
                   ) : (
                     <span className="muted">{activity.logged_km} km {activity.sport}</span>
                   )}
-                </Link>
+                </span>
               ))}
 
             {cell.has_note && <span className="cal-note" title="You wrote something">•</span>}
-          </div>
+          </button>
         ))}
       </div>
+
+      {selected && <DayDetail day={selected} onClose={() => setSelected(null)} />}
 
       <div className="legend">
         {Object.entries(MODE_LABEL).map(([mode, label]) => (

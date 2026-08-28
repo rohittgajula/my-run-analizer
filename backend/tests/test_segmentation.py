@@ -202,3 +202,73 @@ def test_load_formula_is_versioned():
 
 def test_a_rest_day_has_zero_load():
     assert session_load(0, 0) == 0
+
+
+# --- heart-rate zones ---------------------------------------------------------
+
+def test_zones_use_heart_rate_reserve_not_percent_of_max():
+    """Percentage-of-max ignores resting HR and puts a fit and an unfit athlete in
+    the same zones at the same number."""
+    from analysis.zones import build
+
+    fit = build(resting_hr=45, max_hr=185)
+    unfit = build(resting_hr=70, max_hr=185)
+
+    assert fit.band("Z2").low != unfit.band("Z2").low
+
+
+def test_the_real_athletes_zones():
+    """Observed max 181, resting 61 from Garmin. Z2 should land on the easy band
+    already stored in his profile (130-145), which is a useful consistency check."""
+    from analysis.zones import build
+
+    zones = build(resting_hr=61, max_hr=181, max_source="observed")
+    z2 = zones.band("Z2")
+
+    assert 130 <= z2.low <= 136
+    assert 143 <= z2.high <= 148
+
+
+def test_zones_are_refused_when_the_inputs_cannot_support_them():
+    """No 220-age fallback. A formula with a +/-12 bpm spread can put someone a full
+    zone out, and a wrong zone is worse than no zone."""
+    from analysis.zones import build
+
+    assert build(resting_hr=0, max_hr=181) is None
+    assert build(resting_hr=61, max_hr=0) is None
+    assert build(resting_hr=150, max_hr=170) is None   # implausibly narrow reserve
+
+
+def test_classifying_a_heart_rate():
+    from analysis.zones import build
+
+    zones = build(resting_hr=61, max_hr=181)
+    assert zones.of(140) == "Z2"
+    assert zones.of(150) == "Z3"
+    assert zones.of(175) == "Z5"
+    assert zones.of(90) is None      # below Z1 is sitting down, not a training zone
+    assert zones.of(None) is None
+
+
+def test_time_in_zones_weights_by_elapsed_time_not_sample_count():
+    """Garmin drops to smart recording on long activities. Counting samples would
+    under-report exactly the long steady efforts that build aerobic base."""
+    from analysis.zones import build, time_in_zones
+
+    zones = build(resting_hr=61, max_hr=181)
+    # One sample every 5 seconds in Z2, then every second in Z4.
+    samples = [(float(t), 140) for t in range(0, 100, 5)] + [
+        (float(t), 165) for t in range(100, 120)
+    ]
+    totals = time_in_zones(samples, zones)
+
+    assert totals["Z2"] > totals["Z4"]
+
+
+def test_a_long_gap_is_not_counted_as_time_in_a_zone():
+    from analysis.zones import build, time_in_zones
+
+    zones = build(resting_hr=61, max_hr=181)
+    totals = time_in_zones([(0.0, 140), (600.0, 140), (601.0, 140)], zones)
+
+    assert totals["Z2"] == 1     # the ten-minute pause is excluded

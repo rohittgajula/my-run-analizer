@@ -12,6 +12,7 @@ import { RunTruth } from '../components/RunTruth'
 import { RunTrace } from '../components/Charts'
 import { Card } from '../components/Stat'
 import { RunCoach } from '../components/RunCoach'
+import { ZoneBar } from '../components/ZoneBar'
 import { day, duration, km, metres, pace } from '../lib/format'
 
 export default function ActivityDetail() {
@@ -57,6 +58,15 @@ export default function ActivityDetail() {
                 'invented rather than measured. Nothing is shown rather than something wrong.'}
           </p>
         </section>
+      )}
+
+      {data.metrics?.time_in_zone && Object.keys(data.metrics.time_in_zone).length > 0 && (
+        <Card
+          title="Heart-rate zones"
+          description="Aerobic base is built in Z1–Z2. Only Z2 is coloured, so one glance answers the question that matters: how much of this was actually easy?"
+        >
+          <ZoneBar totals={data.metrics.time_in_zone} />
+        </Card>
       )}
 
       {data.metrics && <RunCoach id={Number(id)} />}

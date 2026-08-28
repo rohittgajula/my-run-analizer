@@ -201,6 +201,11 @@ class ActivityMetrics(models.Model):
     custom_load = models.FloatField(null=True, blank=True)
     load_formula_version = models.CharField(max_length=8, blank=True)
 
+    # Seconds per zone, keyed Z1..Z5 plus "below". Empty when the athlete has no
+    # usable max HR — an empty dict reads as "not computed", a dict of zeros would
+    # read as "measured, and you were never in a zone".
+    time_in_zone = models.JSONField(default=dict, blank=True)
+
     algorithm_version = models.IntegerField()
     calculated_at = models.DateTimeField(auto_now=True)
 

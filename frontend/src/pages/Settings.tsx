@@ -167,6 +167,36 @@ export default function Settings() {
           </Field>
         </div>
         <Field
+          label="Max heart rate"
+          hint={
+            draft.zones
+              ? draft.zones.max_source === 'observed'
+                ? `Blank, so zones use ${draft.zones.max_hr} bpm — the highest ever recorded in your own runs. Your true maximum is probably higher, which makes the zones slightly easier rather than harder. Set it if you have tested it.`
+                : `Zones use ${draft.zones.max_hr} bpm.`
+              : 'Without this, heart-rate zones cannot be shown. There is deliberately no 220-age estimate — that formula is ±12 bpm, wide enough to put you a full zone out.'
+          }
+        >
+          <input
+            type="number"
+            value={draft.max_hr ?? ''}
+            onChange={(e) => set('max_hr', numeric(e.target.value))}
+            placeholder={draft.zones ? String(draft.zones.max_hr) : 'not set'}
+          />
+        </Field>
+
+        <Field
+          label="Resting heart rate"
+          hint="Blank uses Garmin's nightly measurement, which is usually better than a remembered number."
+        >
+          <input
+            type="number"
+            value={draft.resting_hr ?? ''}
+            onChange={(e) => set('resting_hr', numeric(e.target.value))}
+            placeholder={draft.zones ? String(draft.zones.resting_hr) : 'from Garmin'}
+          />
+        </Field>
+
+        <Field
           label="Run cadence threshold (spm)"
           hint="At or above this counts as running rather than walking. This is what separates your real running distance from the total."
         >
@@ -177,6 +207,34 @@ export default function Settings() {
           />
         </Field>
       </section>
+
+      {athlete?.zones && (
+        <section className="card">
+          <h2>Your heart-rate zones</h2>
+          <p className="card-desc">
+            Karvonen method: resting {athlete.zones.resting_hr} bpm, max{' '}
+            {athlete.zones.max_hr} bpm ({athlete.zones.max_source}). Zones account for
+            resting heart rate rather than being a flat percentage of maximum, which
+            would put a fit and an unfit athlete in the same band at the same number.
+          </p>
+          <dl className="zonelist">
+            {athlete.zones.zones.map((zone) => (
+              <div key={zone.name}>
+                <dt>
+                  {zone.name} {zone.label}
+                </dt>
+                <dd>
+                  {zone.low}–{zone.high}
+                  <span className="unit">bpm</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <p className="truth-note">
+            {athlete.zones.zones.find((z) => z.name === 'Z2')?.purpose}
+          </p>
+        </section>
+      )}
 
       {errors.detail && <p className="bad">{errors.detail}</p>}
 

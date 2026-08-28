@@ -111,6 +111,47 @@ class Athlete(models.Model):
         """weekday: 0 = Monday."""
         return bool((self.available_days or {}).get(str(weekday), False))
 
+    def zones(self):
+        """Heart-rate zones, or None when the data cannot support them.
+
+        Resting HR comes from Garmin's nightly measurement in preference to the
+        profile field, because it is measured rather than remembered. Max HR falls
+        back to the highest value ever *observed* in this athlete's own activities —
+        a real measurement, and a conservative one: a true maximum is likely higher,
+        which makes the derived zones slightly easier rather than harder.
+
+        There is deliberately no 220-age fallback. That formula has a ±10-12 bpm
+        spread, wide enough to put someone a full zone out, and a wrong zone is worse
+        than no zone.
+        """
+        from django.db.models import Max
+
+        from analysis.zones import build
+
+        from apps.activities.models import Activity
+        from apps.ingest.models import DailyMetrics
+
+        resting = self.resting_hr
+        source = "profile"
+        if not resting:
+            recent = [
+                row.resting_hr
+                for row in DailyMetrics.objects.filter(athlete=self).order_by("-metric_date")[:28]
+                if row.resting_hr
+            ]
+            resting = sorted(recent)[len(recent) // 2] if recent else None
+
+        maximum = self.max_hr
+        if not maximum:
+            maximum = Activity.objects.filter(athlete=self).aggregate(
+                peak=Max("max_hr")
+            )["peak"]
+            source = "observed"
+
+        if not resting or not maximum:
+            return None
+        return build(resting, maximum, max_source=source)
+
     @property
     def token_dir(self) -> str:
         """Per-athlete Garmin token directory. Never shared between athletes."""

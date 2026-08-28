@@ -707,3 +707,47 @@ input[readonly] { color: var(--muted); background: var(--surface-hi); }
   .cal-cell { min-height: 4rem; font-size: 0.68rem; padding: 0.25rem 0.3rem; }
   .cal-planned, .cal-actual { font-size: 0.62rem; }
 }
+
+/* --- zones ----------------------------------------------------------------- */
+
+.zonebar {
+  display: flex;
+  height: 0.7rem;
+  border-radius: 0.35rem;
+  overflow: hidden;
+  background: var(--border);
+  margin-bottom: 1rem;
+}
+.zonebar span { display: block; }
+
+.zonelist { display: grid; gap: 0.5rem; margin: 0; }
+.zonelist > div { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.zonelist dt { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--muted); }
+.zonelist dd { margin: 0; font-variant-numeric: tabular-nums; font-size: 0.9rem; }
+.zonedot { width: 0.55rem; height: 0.55rem; border-radius: 2px; flex: none; }
+
+/* --- calendar day detail --------------------------------------------------- */
+
+.cal-cell { border: 0; font: inherit; text-align: left; cursor: pointer; width: 100%; }
+.cal-cell:hover { background: var(--surface); }
+.cal-selected { box-shadow: inset 0 0 0 2px var(--data); }
+
+.daydetail { margin-top: 1.25rem; }
+.daydetail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-hi);
+}
+.daydetail-head h2 {
+  font-size: 1.15rem;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0 0 0.25rem;
+  font-weight: 650;
+}
+.daydetail-head p { margin: 0; font-size: 0.88rem; }

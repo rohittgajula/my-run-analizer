@@ -40,17 +40,40 @@ def calendar(request):
     # Planned sessions, keyed by date. The plan is regenerated rather than stored, so
     # this always reflects the data as it stands right now.
     plan = plan_for(athlete)
+    zones = athlete.zones()
+    phase_by_date: dict[dt.date, str] = {}
     planned: dict[dt.date, dict] = {}
+
     if plan:
         for week in plan.weeks:
             for session in week.sessions:
-                if start <= session.date <= end and not session.optional:
-                    planned[session.date] = {
-                        "kind": session.kind,
-                        "run_minutes": session.run_minutes,
-                        "walk_minutes": session.walk_minutes,
-                        "continuous_target_s": session.continuous_target_s,
-                    }
+                if not (start <= session.date <= end) or session.optional:
+                    continue
+                phase_by_date[session.date] = week.phase
+                band = (
+                    zones.band(session.target_zone)
+                    if zones and session.target_zone else None
+                )
+                planned[session.date] = {
+                    "kind": session.kind,
+                    "run_minutes": session.run_minutes,
+                    "walk_minutes": session.walk_minutes,
+                    "target_run_m": session.target_run_m,
+                    "continuous_target_s": session.continuous_target_s,
+                    "purpose": session.purpose,
+                    "effort": session.effort,
+                    "phase": week.phase,
+                    # A pace band and a heart-rate band together, because either
+                    # alone is easy to game: pace ignores hills and heat, heart rate
+                    # lags by half a minute.
+                    "pace_s_per_km": round(athlete.easy_pace_min + athlete.easy_pace_max) // 2
+                        if session.kind in ("EASY", "LONG", "RUN_WALK") else None,
+                    "zone": session.target_zone,
+                    "zone_label": band.label if band else None,
+                    "zone_low": band.low if band else None,
+                    "zone_high": band.high if band else None,
+                    "zone_purpose": band.purpose if band else None,
+                }
 
     actual: dict[dt.date, list] = {}
     for activity in (
@@ -90,6 +113,7 @@ def calendar(request):
                 {"name": result.race.name, "distance_km": result.race.distance_km}
                 if result and result.mode == "race" and result.race else None
             ),
+            "phase": phase_by_date.get(cursor),
             "planned": planned.get(cursor),
             "activities": actual.get(cursor, []),
             "readiness": readiness.get(cursor),

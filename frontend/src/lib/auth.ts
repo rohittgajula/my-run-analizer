@@ -132,6 +132,12 @@ export type Athlete = {
   long_run_day: number
   training_days_per_week: number
   onboarding_complete: boolean
+  zones: {
+    resting_hr: number
+    max_hr: number
+    max_source: string
+    zones: Array<{ name: string; label: string; low: number; high: number; purpose: string }>
+  } | null
   garmin_connected: boolean
   garmin_last_sync: string | null
 }
@@ -155,6 +161,7 @@ export type ActivityMetrics = {
   avg_run_hr: number | null
   hr_drift_percent: number | null
   custom_load: number | null
+  time_in_zone: Record<string, number> | null
 }
 
 export type Segment = {

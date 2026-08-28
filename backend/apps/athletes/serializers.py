@@ -12,6 +12,24 @@ WEEKDAYS = {"0", "1", "2", "3", "4", "5", "6"}
 
 class AthleteSerializer(serializers.ModelSerializer):
     training_days_per_week = serializers.IntegerField(read_only=True)
+    zones = serializers.SerializerMethodField()
+
+    def get_zones(self, athlete):
+        """None when the data cannot support zones — the client shows nothing
+        rather than a band derived from a population formula."""
+        zones = athlete.zones()
+        if zones is None:
+            return None
+        return {
+            "resting_hr": zones.resting_hr,
+            "max_hr": zones.max_hr,
+            "max_source": zones.max_source,
+            "zones": [
+                {"name": z.name, "label": z.label, "low": z.low, "high": z.high,
+                 "purpose": z.purpose}
+                for z in zones.zones
+            ],
+        }
 
     class Meta:
         model = Athlete
@@ -21,13 +39,14 @@ class AthleteSerializer(serializers.ModelSerializer):
             "easy_pace_min", "easy_pace_max",
             "hr_easy_min", "hr_easy_max", "hr_ceiling",
             "run_cadence_threshold", "available_days", "long_run_day",
-            "training_days_per_week", "onboarding_complete",
+            "training_days_per_week", "onboarding_complete", "zones",
             "garmin_connected", "garmin_last_sync", "created_at", "updated_at",
         ]
         # System-managed. A client that could PATCH garmin_connected=True could make
         # the UI claim sync works when it does not.
         read_only_fields = [
             "id", "garmin_connected", "garmin_last_sync", "created_at", "updated_at",
+            "zones",
         ]
 
     def validate_timezone(self, value):

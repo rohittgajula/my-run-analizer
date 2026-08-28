@@ -286,6 +286,38 @@ Neither reaches the ideal, and the plan says so rather than inventing a peak it 
 safely reach — the caps outrank the target, always. Expected outcome is a run/walk
 finish, stated plainly.
 
+### Heart-rate zones
+
+Karvonen (heart-rate **reserve**), not percentage-of-max: percentage-of-max ignores
+resting heart rate and puts a fit and an unfit athlete in the same band at the same
+number. Resting comes from Garmin's nightly measurement; max falls back to the highest
+value ever *observed* in the athlete's own runs.
+
+**There is deliberately no 220-age fallback.** That formula has a ±10–12 bpm spread —
+wide enough to put someone a full zone out — and a wrong zone is worse than no zone.
+Where max is unknown, zones simply are not shown.
+
+His zones, from resting 61 and observed max 181:
+
+| | | |
+|---|---|---|
+| Z1 | Recovery | 121–133 |
+| **Z2** | **Aerobic base** | **133–145** |
+| Z3 | Steady | 145–157 |
+| Z4 | Threshold | 157–169 |
+| Z5 | Maximum | 169–181 |
+
+Z2 landing on 133–145 is a useful consistency check: his stored easy band is 130–145,
+arrived at independently.
+
+**Every prescribed session carries a target zone**, and easy work is Z2 on purpose —
+running easy days slightly too hard is the commonest reason an aerobic base stalls.
+Time-in-zone is computed per activity, weighted by elapsed time rather than sample
+count, because Garmin drops to smart recording on longer efforts.
+
+Only Z2 is drawn in the data colour. One glance at the bar answers the question that
+matters: how much of that was actually easy?
+
 ### Everything recalculates from the races
 
 The plan, today's mode, the calendar and the prediction are all **computed on read**,

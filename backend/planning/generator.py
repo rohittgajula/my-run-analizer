@@ -91,6 +91,10 @@ class Session:
     # elsewhere, because prescribing a continuous target on an interval session
     # would contradict the session.
     continuous_target_s: float | None = None
+    # The heart-rate zone this session is meant to sit in. Aerobic base is built in
+    # Z2, and the commonest beginner mistake is running easy days in Z3 — so easy
+    # sessions carry the target explicitly rather than leaving "easy" to interpretation.
+    target_zone: str | None = None
 
     @property
     def total_minutes(self) -> float:
@@ -317,6 +321,19 @@ PHASE_SHAPE: dict[Phase, dict] = {
     "RACE":       {"long_share": 1.0, "run_walk_ratio": 0.9, "hard": 0},
 }
 
+# What each session is FOR, expressed as a zone. Easy work is Z2 on purpose: it is
+# the zone that builds endurance and the one most beginners skip by running everything
+# slightly too hard.
+SESSION_ZONE: dict[str, str] = {
+    "WALK": "Z1",
+    "RUN_WALK": "Z2",
+    "EASY": "Z2",
+    "LONG": "Z2",
+    "TEMPO": "Z3",
+    "INTERVALS": "Z4",
+    "RACE": "Z3",
+}
+
 PURPOSE = {
     "LONG": "Time on feet. The session that grows your longest continuous run.",
     "RUN_WALK": "Aerobic volume at an easy effort, taken in run/walk blocks.",
@@ -411,6 +428,7 @@ def _lay_out_week(
                 Session(
                     date=week.start_date + dt.timedelta(days=_offset_for(week.start_date, day)),
                     kind="WALK",
+                    target_zone=SESSION_ZONE["WALK"],
                     run_minutes=0.0, walk_minutes=25.0,
                     target_run_m=0.0,
                     purpose=PURPOSE["WALK"],
@@ -433,6 +451,7 @@ def _session(
     walk_minutes = run_minutes * (1 - ratio) / ratio if ratio > 0 else 0.0
 
     return Session(
+        target_zone=SESSION_ZONE.get(kind),
         date=week.start_date + dt.timedelta(days=_offset_for(week.start_date, day)),
         kind=kind,
         run_minutes=round(run_minutes, 1),

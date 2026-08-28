@@ -11,7 +11,7 @@ import logging
 
 from django.db import transaction
 
-from analysis import heart_rate, load
+from analysis import heart_rate, load, zones as zone_maths
 from analysis.running_truth import summarise
 from analysis.segmentation import (
     ALGORITHM_VERSION, NotSegmentable, Sample, check_segmentable, segment_samples,
@@ -52,7 +52,8 @@ def derive(activity: Activity) -> ActivityMetrics | None:
         activity.save(update_fields=["segmentation_version"])
         return None
 
-    threshold = activity.athlete.run_cadence_threshold
+    athlete = activity.athlete
+    threshold = athlete.run_cadence_threshold
     segments = segment_samples(samples, run_cadence_threshold=threshold)
     truth = summarise(segments)
 
@@ -79,9 +80,19 @@ def derive(activity: Activity) -> ActivityMetrics | None:
         for s in segments
     )
 
+    athlete_zones = athlete.zones()
+    in_zone = (
+        zone_maths.time_in_zones(
+            ((s.offset_s, s.heart_rate) for s in samples), athlete_zones
+        )
+        if athlete_zones
+        else {}
+    )
+
     metrics, _ = ActivityMetrics.objects.update_or_create(
         activity=activity,
         defaults={
+            "time_in_zone": in_zone,
             "run_distance_m": truth.run_distance_m,
             "walk_distance_m": truth.walk_distance_m,
             "run_fraction": truth.run_fraction,
