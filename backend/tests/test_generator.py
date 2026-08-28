@@ -194,3 +194,75 @@ def test_race_week_contains_the_race():
     weeks = plan_for(15).weeks
     assert weeks[-1].phase == "RACE"
     assert any(s.kind == "RACE" for s in weeks[-1].sessions)
+
+
+# --- continuous-run progression -----------------------------------------------
+
+def test_the_long_run_carries_a_continuous_target():
+    """Weekly volume and continuous capacity come apart badly for a beginner: adding
+    a fourth short session raises volume without moving continuous capacity at all,
+    and continuous capacity is what decides whether a 10K holds together."""
+    for week in plan_for(15).weeks:
+        for session in week.sessions:
+            if session.kind == "LONG":
+                assert session.continuous_target_s and session.continuous_target_s > 0
+
+
+def test_only_the_long_run_carries_one():
+    """Prescribing an unbroken block on an interval session would contradict it."""
+    for week in plan_for(15).weeks:
+        for session in week.sessions:
+            if session.kind != "LONG":
+                assert session.continuous_target_s is None
+
+
+def test_continuous_capacity_grows_from_the_athletes_actual_longest():
+    plan = plan_for(15, longest_run_s=830.0)   # 13.9 min, this athlete's real figure
+    assert plan.peak_continuous_s > 830.0
+
+
+def test_continuous_progression_respects_both_caps():
+    """Percentage alone lets a large starting block grow absurdly; minutes alone
+    crawls from a small one. Whichever is stricter applies."""
+    from planning.generator import MAX_CONTINUOUS_INCREASE_MIN, MAX_CONTINUOUS_INCREASE_PCT
+
+    for baseline_s in (300.0, 830.0, 2400.0):
+        weeks = plan_for(20, longest_run_s=baseline_s).weeks
+        targets = [w.continuous_target_s for w in weeks if w.phase not in ("TAPER", "RACE")]
+        highest = targets[0]
+        for target in targets[1:]:
+            if target > highest:
+                assert target - highest <= MAX_CONTINUOUS_INCREASE_MIN * 60 + 1
+                assert (target - highest) / highest * 100 <= MAX_CONTINUOUS_INCREASE_PCT + 1
+                highest = target
+
+
+def test_a_cutback_prescribes_less_without_unlearning_capability():
+    """A down week is not detraining. The following week must not restart lower."""
+    weeks = [w for w in plan_for(16).weeks if w.phase not in ("TAPER", "RACE")]
+    for previous, current, following in zip(weeks, weeks[1:], weeks[2:]):
+        if current.is_cutback:
+            assert following.continuous_target_s >= previous.continuous_target_s
+
+
+def test_a_beginner_is_told_they_will_run_walk_the_race():
+    """13.9 min of continuous running now, against roughly 100 min to run 10 km
+    non-stop at this pace. Saying so is more useful than implying otherwise."""
+    plan = plan_for(15, longest_run_s=830.0, run_pace_s_per_km=609.0)
+
+    assert not plan.will_run_continuously
+    assert any("run/walk this one" in w for w in plan.warnings)
+
+
+def test_someone_already_capable_is_not_warned():
+    plan = plan_for(15, longest_run_s=3900.0, run_pace_s_per_km=330.0)
+    assert plan.will_run_continuously
+    assert not any("run/walk this one" in w for w in plan.warnings)
+
+
+def test_continuous_target_stops_at_the_ceiling():
+    """Past this there is no benefit to a beginner training for a 10K."""
+    from planning.generator import CONTINUOUS_CEILING_MIN
+
+    plan = plan_for(40, longest_run_s=3000.0)
+    assert plan.peak_continuous_s <= CONTINUOUS_CEILING_MIN * 60 + 1

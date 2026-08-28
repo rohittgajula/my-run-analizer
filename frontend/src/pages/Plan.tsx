@@ -13,6 +13,7 @@ type PlanSession = {
   target_run_m: number
   purpose: string
   effort: string
+  continuous_target_s: number | null
 }
 type PlanWeek = {
   index: number
@@ -20,6 +21,7 @@ type PlanWeek = {
   phase: string
   start_date: string
   planned_run_km: number
+  continuous_target_s: number
   is_cutback: boolean
   sessions: PlanSession[]
 }
@@ -29,6 +31,9 @@ type PlanData = {
   peak_run_km: number
   ideal_peak_run_km: number
   reached_ideal_peak: boolean
+  peak_continuous_s: number
+  race_needs_continuous_s: number
+  will_run_continuously: boolean
   warnings: string[]
   weeks: PlanWeek[]
 }
@@ -167,6 +172,28 @@ export default function Plan() {
           title="The build"
           description={`${weeks.data.weeks_available} weeks, ${weeks.data.runway.toLowerCase()} runway. Volume is RUNNING distance — ramping the logged total when most of it is walking prescribes a load you are not carrying.`}
         >
+          <div className="grid grid-4 tight" style={{ marginBottom: '1.25rem' }}>
+            <Stat label="Peak weekly running" value={weeks.data.peak_run_km.toFixed(1)} unit="km" />
+            <Stat
+              label="Longest block by race day"
+              value={Math.round(weeks.data.peak_continuous_s / 60)}
+              unit="min"
+              tone="data"
+              note="The number that decides whether race day holds together."
+            />
+            <Stat
+              label="To run it unbroken"
+              value={Math.round(weeks.data.race_needs_continuous_s / 60)}
+              unit="min"
+              note="At your current running pace."
+            />
+            <Stat
+              label="Expected"
+              value={weeks.data.will_run_continuously ? 'continuous' : 'run/walk'}
+              tone={weeks.data.will_run_continuously ? 'ok' : 'neutral'}
+            />
+          </div>
+
           {weeks.data.warnings.map((warning) => (
             <p className="notice notice-caution" key={warning}>{warning}</p>
           ))}
@@ -175,25 +202,28 @@ export default function Plan() {
             <table className="blocks weeks">
               <thead>
                 <tr>
-                  <th>Wk</th><th>Phase</th><th>Run km</th><th>Sessions</th><th>Longest</th>
+                  <th>Wk</th><th>Phase</th><th>Run km</th><th>Long block</th><th>Sessions</th>
                 </tr>
               </thead>
               <tbody>
-                {weeks.data.weeks.map((week) => {
-                  const longest = Math.max(0, ...week.sessions.map((s) => s.target_run_m))
-                  return (
-                    <tr key={week.index} className={week.is_cutback ? '' : 'is-run'}>
-                      <td className="muted">{week.index + 1}</td>
-                      <td>{week.phase.toLowerCase()}</td>
-                      <td className={week.is_cutback ? 'muted' : 'data'}>
-                        {week.planned_run_km.toFixed(1)}
-                        {week.is_cutback && <span className="unit">cutback</span>}
-                      </td>
-                      <td>{week.sessions.length}</td>
-                      <td>{longest ? `${longest} m` : '—'}</td>
-                    </tr>
-                  )
-                })}
+                {weeks.data.weeks.map((week) => (
+                  <tr key={week.index} className={week.is_cutback ? '' : 'is-run'}>
+                    <td className="muted">{week.index + 1}</td>
+                    <td>{week.phase.toLowerCase()}</td>
+                    <td className={week.is_cutback ? 'muted' : ''}>
+                      {week.planned_run_km.toFixed(1)}
+                      {week.is_cutback && <span className="unit">cutback</span>}
+                    </td>
+                    {/* The column that actually decides race day, so it carries the
+                        data colour and the volume column does not. */}
+                    <td className={week.is_cutback ? 'muted' : 'data'}>
+                      {week.continuous_target_s
+                        ? `${Math.round(week.continuous_target_s / 60)} min`
+                        : '—'}
+                    </td>
+                    <td>{week.sessions.length}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

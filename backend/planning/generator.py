@@ -32,6 +32,23 @@ IDEAL_MAX_WEEKS = {5.0: 12, 10.0: 18, 21.1: 22, 42.2: 24}
 # a beginner: the aim is finishing, not a time.
 PEAK_VOLUME_MULTIPLE = 2.2
 
+# Longest CONTINUOUS run, progressed separately from weekly volume.
+#
+# For a beginner run/walking a 10K this is the number that actually decides the day.
+# Weekly kilometres is the conventional lever, but someone running 12 km a week in
+# 90-second blocks and someone running 12 km a week in one 40-minute block are not
+# in the same place, and only the second can hold a race together.
+#
+# Capped two ways, whichever is stricter: continuous running is the demand that
+# outruns tendons and connective tissue first, and a percentage alone lets a big
+# starting block grow absurdly.
+MAX_CONTINUOUS_INCREASE_PCT = 10.0
+MAX_CONTINUOUS_INCREASE_MIN = 2.0
+
+# Beyond this there is no benefit to a beginner training for a 10K; the long run
+# stops progressing and the volume goes elsewhere.
+CONTINUOUS_CEILING_MIN = 75.0
+
 TAPER_WEEKS = {5.0: 1, 10.0: 1, 21.1: 2, 42.2: 3}
 
 
@@ -70,6 +87,10 @@ class Session:
     purpose: str
     effort: str
     optional: bool = False
+    # Only set on the long run: the unbroken block to aim for inside it. None
+    # elsewhere, because prescribing a continuous target on an interval session
+    # would contradict the session.
+    continuous_target_s: float | None = None
 
     @property
     def total_minutes(self) -> float:
@@ -83,6 +104,9 @@ class Week:
     phase: Phase
     start_date: dt.date
     planned_run_km: float
+    # The long run's target unbroken block. Progressed separately from volume,
+    # because it is the number that decides whether a 10K holds together.
+    continuous_target_s: float
     is_cutback: bool
     sessions: list[Session] = field(default_factory=list)
 
@@ -94,8 +118,15 @@ class Plan:
     peak_run_km: float
     ideal_peak_run_km: float
     reached_ideal_peak: bool
+    peak_continuous_s: float
+    race_needs_continuous_s: float
     warnings: list[str]
     weeks: list[Week]
+
+    @property
+    def will_run_continuously(self) -> bool:
+        """Whether the plan expects the race to be run unbroken."""
+        return self.peak_continuous_s >= self.race_needs_continuous_s
 
 
 def _distance_key(distance_km: float) -> float:
@@ -189,7 +220,9 @@ def _volume_curve(
     """
     growth = 1 + config.max_weekly_increase_pct / 100
     volumes: list[float] = []
-    current = max(baseline_km, 1.0)
+    # Rounded at the source: week 0 appends this directly, and an unrounded
+    # baseline surfaced as '5.25707 km' in the plan table.
+    current = _round_down(max(baseline_km, 1.0))
     build_index = 0
 
     for index, phase in enumerate(weeks):
@@ -221,6 +254,55 @@ def _volume_curve(
     build_volumes = [v for v, p in zip(volumes, weeks) if p not in ("TAPER", "RACE")]
     achieved = max(build_volumes) if build_volumes else baseline_km
     return volumes, achieved, achieved >= ideal_peak_km - 0.05
+
+
+def _continuous_curve(
+    phases: list[Phase], baseline_s: float, config: PlanConfig
+) -> tuple[list[float], float]:
+    """Per-week target for the long run's unbroken block.
+
+    Progresses on its own schedule rather than riding the volume curve. The two come
+    apart badly for a beginner: adding a fourth short session raises weekly volume
+    without moving continuous capacity at all, and continuous capacity is what
+    decides whether a 10K holds together.
+
+    Returns (per-week targets, peak capability). The peak is the CAPABILITY reached,
+    not the highest prescribed value — a cutback week prescribes less without
+    unlearning anything.
+    """
+    growth = 1 + MAX_CONTINUOUS_INCREASE_PCT / 100
+    ceiling = CONTINUOUS_CEILING_MIN * 60
+    capability = max(baseline_s, 120.0)   # floor: everyone can run two minutes
+    targets: list[float] = []
+    build_index = 0
+
+    for index, phase in enumerate(phases):
+        if phase == "RACE":
+            targets.append(0.0)
+            continue
+        if phase == "TAPER":
+            # Hold capability, prescribe less of it. A taper is not detraining.
+            targets.append(round(capability * 0.6))
+            continue
+
+        build_index += 1
+        is_cutback = build_index > 1 and build_index % config.cutback_every_n_weeks == 0
+
+        # Capability advances only on weeks that actually load it. Growing it through
+        # a cutback bankrolled an increment nobody trained for, so the week after a
+        # down week jumped by two steps at once — 363 s to 439 s, a 21% rise against
+        # a 10% cap.
+        if build_index > 1 and not is_cutback:
+            capability = min(
+                capability * growth,
+                capability + MAX_CONTINUOUS_INCREASE_MIN * 60,
+                ceiling,
+            )
+
+        # A cutback prescribes less without unlearning anything: capability is held.
+        targets.append(round(capability * 0.7 if is_cutback else capability))
+
+    return targets, capability
 
 
 # How a week's running volume splits across its sessions, and how much walking rides
@@ -311,9 +393,15 @@ def _lay_out_week(
 
         sessions.append(_session(week, day, kind, per_session_km, shape, baseline, effort))
 
-    sessions.append(
-        _session(week, long_day, "LONG", long_km, shape, baseline, "Easy throughout")
-    )
+    long_run = _session(week, long_day, "LONG", long_km, shape, baseline, "Easy throughout")
+    long_run.continuous_target_s = week.continuous_target_s
+    if week.continuous_target_s:
+        long_run.purpose = (
+            f"Time on feet. Aim for one unbroken block of about "
+            f"{week.continuous_target_s / 60:.0f} minutes inside it — that block is "
+            "what decides whether race day holds together."
+        )
+    sessions.append(long_run)
 
     # Non-training days become an optional walk with real numbers rather than a dash:
     # a rest day that says "optional walk" and shows nothing is not a prescription.
@@ -390,6 +478,18 @@ def generate_plan(
 
     ideal_peak = race_km * PEAK_VOLUME_MULTIPLE
     volumes, achieved_peak, reached = _volume_curve(phases, baseline.run_km_per_week, ideal_peak, config)
+    continuous, peak_continuous = _continuous_curve(phases, baseline.longest_run_s, config)
+
+    # What running the race unbroken would actually take, at this athlete's own pace.
+    race_needs_s = race_km * baseline.run_pace_s_per_km
+    if peak_continuous < race_needs_s:
+        warnings.append(
+            f"Your longest unbroken run is projected to reach "
+            f"{peak_continuous / 60:.0f} minutes by race day, against the "
+            f"{race_needs_s / 60:.0f} minutes running {race_km:g} km non-stop would take "
+            f"at your current pace. Expect to run/walk this one — that is a finish, "
+            "not a failure."
+        )
 
     if not reached:
         warnings.append(
@@ -409,6 +509,7 @@ def generate_plan(
             phase=phase,
             start_date=start,
             planned_run_km=volume,
+            continuous_target_s=continuous[index],
             is_cutback=index > 0 and volume < volumes[index - 1],
         )
         week.sessions = _lay_out_week(week, baseline, config)
@@ -420,6 +521,8 @@ def generate_plan(
         peak_run_km=achieved_peak,
         ideal_peak_run_km=round(ideal_peak, 1),
         reached_ideal_peak=reached,
+        peak_continuous_s=round(peak_continuous),
+        race_needs_continuous_s=round(race_needs_s),
         warnings=warnings,
         weeks=weeks,
     )

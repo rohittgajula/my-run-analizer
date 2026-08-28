@@ -39,6 +39,7 @@ def _session_json(session):
         "purpose": session.purpose,
         "effort": session.effort,
         "optional": session.optional,
+        "continuous_target_s": session.continuous_target_s,
     }
 
 
@@ -60,6 +61,9 @@ def plan_weeks(request):
         "peak_run_km": plan.peak_run_km,
         "ideal_peak_run_km": plan.ideal_peak_run_km,
         "reached_ideal_peak": plan.reached_ideal_peak,
+        "peak_continuous_s": plan.peak_continuous_s,
+        "race_needs_continuous_s": plan.race_needs_continuous_s,
+        "will_run_continuously": plan.will_run_continuously,
         "warnings": plan.warnings,
         "weeks": [
             {
@@ -68,6 +72,7 @@ def plan_weeks(request):
                 "phase": week.phase,
                 "start_date": week.start_date,
                 "planned_run_km": week.planned_run_km,
+                "continuous_target_s": week.continuous_target_s,
                 "is_cutback": week.is_cutback,
                 "sessions": [_session_json(s) for s in week.sessions if not s.optional],
             }

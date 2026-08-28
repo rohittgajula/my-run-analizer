@@ -274,10 +274,23 @@ the four model IDs there** — nothing reads a model name from code.
 calendar, finish prediction, the plan generator and the readiness layer all work
 against real data. **207 tests pass.**
 
-**The generated plan**: 16 weeks to Pune, STANDARD runway, baseline 5.3 km of running
-a week rising to a **12.7 km peak** — against an ideal of 22 km for a 10K. The plan says
-so rather than inventing a peak it cannot safely reach: the 10% weekly cap outranks the
-target, always.
+**The generated plan**: 16 weeks to Pune, STANDARD runway. Two curves, progressed
+separately:
+
+| | now | race day | ideal |
+|---|---|---|---|
+| Weekly **running** distance | 5.3 km | 12.7 km | 22 km |
+| Longest **unbroken** block | 14 min | 32 min | 102 min to run 10K non-stop |
+
+Neither reaches the ideal, and the plan says so rather than inventing a peak it cannot
+safely reach — the caps outrank the target, always. Expected outcome is a run/walk
+finish, stated plainly.
+
+**Volume and continuous capacity are progressed separately, and that matters.** Adding a
+fourth short session raises weekly volume without moving continuous capacity at all, and
+continuous capacity is what decides whether a 10K holds together. Someone running 12 km a
+week in 90-second blocks and someone running 12 km a week in one 40-minute block are not
+in the same place.
 
 **28 days of Garmin wellness ingested**: sleep, HRV, training readiness, acute load,
 resting HR, stress, Body Battery, respiration, VO₂max. Shown on Today and Health as
