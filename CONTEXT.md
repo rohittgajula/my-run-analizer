@@ -4,7 +4,7 @@
 > session reads. If something here contradicts the code, the code wins and this file is
 > stale — say so.
 
-Last updated: **2026-08-28** · Status: **M4 complete.** Coaching, chat, run analysis, charts, filtering, pagination, calendar and editable races all live. M5 (validators, evals) next.
+Last updated: **2026-08-28** · Status: **M5 complete.** Coaching, chat, run analysis, charts, filtering, pagination, calendar and editable races all live. M6 (a second provider behind the same seam) next.
 
 ---
 
@@ -285,6 +285,30 @@ separately:
 Neither reaches the ideal, and the plan says so rather than inventing a peak it cannot
 safely reach — the caps outrank the target, always. Expected outcome is a run/walk
 finish, stated plainly.
+
+### Validation and evals
+
+Structured Outputs guarantees the *shape*. Nothing guarantees the content, so three
+things are checked before the athlete reads a response: **invented numbers** (every
+figure must trace to one in the context), **unsafe progression**, and **medical
+claims**. Findings are attached to the stored analysis and logged, never used to
+silently rewrite the answer — a quietly edited response is one nobody can audit.
+
+`manage.py evals` runs five fixture athletes chosen for the cases that produce *wrong*
+answers rather than nice ones: no history, a pain report, good numbers with terrible
+recovery, a healthy control, and the real run/walk beginner. Responses are recorded to
+disk and keyed by prompt version, so a re-run is free; bumping `PROMPT_VERSION`
+invalidates them, which is exactly when re-measuring matters.
+
+**Assertions are on structure and safety, never prose.** Testing wording locks in one
+model's voice and fails on every upgrade.
+
+**The first eval run failed three of five, and all three were the validator's fault.**
+It flagged *"do not add distance"*, *"it does not diagnose a problem"* and *"rather
+than trying to run faster"* — the model was warning against those things and the
+checker read the advice backwards. Negation handling now applies, confined to the
+sentence: a negator in a *previous* sentence must not excuse a genuine recommendation,
+which a naive character window did.
 
 ### Heart-rate zones
 

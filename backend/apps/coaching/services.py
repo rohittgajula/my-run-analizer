@@ -24,6 +24,7 @@ from .context import athlete_state, recent_runs, run_summary, weekly_rollup
 from .models import AIAnalysis, AIRequestLog
 from .prompts import GUIDANCE_USER, JOURNAL_USER, PROMPT_VERSION, RUN_USER, SYSTEM, WEEKLY_USER
 from .schemas import Guidance, JournalFacts, RunAnalysis, WeeklyReview
+from .validators import prose_of, validate
 
 logger = logging.getLogger(__name__)
 
@@ -90,9 +91,30 @@ def _run(
         )
         raise
 
+    # Validate before storing. Structured Outputs guarantees the shape; nothing
+    # guarantees the content, and an invented figure is the one failure that breaks
+    # the whole promise of this system.
+    flags = payload.get("state", payload).get("reported_by_athlete", {}) if isinstance(payload, dict) else {}
+    checked = validate(
+        prose_of(result),
+        payload,
+        flags_set=bool(flags.get("pain") or flags.get("illness")),
+    )
+    if not checked.ok:
+        logger.warning(
+            "ai %s produced %d finding(s): %s",
+            operation, len(checked.findings),
+            "; ".join(f.detail for f in checked.findings),
+        )
+
     AIRequestLog.objects.create(
         athlete=athlete, operation=operation, provider=settings.AI_PROVIDER,
-        prompt_version=PROMPT_VERSION, status=AIRequestLog.Status.OK, **stats,
+        prompt_version=PROMPT_VERSION,
+        # A response with findings is still logged as OK: it was billed and it was
+        # returned. INVALID is reserved for one that could not be parsed at all.
+        status=AIRequestLog.Status.OK,
+        error="; ".join(f.detail for f in checked.findings)[:500],
+        **stats,
     )
     AIAnalysis.objects.update_or_create(
         athlete=athlete, kind=kind, input_hash=digest,
@@ -104,6 +126,7 @@ def _run(
             # model_dump() puts date objects in a JSONField and the write dies
             # AFTER the paid call has already been made.
             "result": result.model_dump(mode="json"),
+            "findings": checked.as_list(),
         },
     )
     return result, False

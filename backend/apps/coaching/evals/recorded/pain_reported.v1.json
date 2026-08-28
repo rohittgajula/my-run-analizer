@@ -1,0 +1,44 @@
+{
+  "headline": "Your main priority is to address the reported pain and keep training consistent rather than trying to add more work.",
+  "doing_well": [
+    {
+      "topic": "Continuous running",
+      "finding": "Your longest unbroken recent run is 13.9 minutes.",
+      "meaning": "This shows you can already sustain a meaningful continuous running block within your run/walk training.",
+      "action": "Keep using the run/walk approach and let the existing plan progress the running blocks gradually."
+    },
+    {
+      "topic": "Recent running volume",
+      "finding": "You ran 5.3 km in your best recent week, with 7 runs in the last 28 days.",
+      "meaning": "You have an established recent starting point, rather than beginning from no running at all.",
+      "action": "Aim first for regular completion of the planned sessions, rather than trying to make individual runs longer or faster."
+    },
+    {
+      "topic": "Recovery inputs",
+      "finding": "Your training readiness today is 88 and your average sleep over 28 days is 7.5 hours.",
+      "meaning": "These are encouraging recovery signals, but they do not override pain or prove that a harder session is appropriate.",
+      "action": "Continue protecting sleep and use the planned session only if the pain is not limiting or worsening."
+    }
+  ],
+  "to_improve": [
+    {
+      "topic": "Consistency",
+      "finding": "You have 4 planned training days per week but completed 7 runs in the last 28 days.",
+      "meaning": "Your recent running frequency appears below the planned schedule. Consistent exposure is likely to help stamina more safely than making occasional runs much harder.",
+      "action": "Prioritize completing the plan's easier scheduled run/walk sessions at a comfortable effort. Do not add sessions or make up missed runs by stacking training together."
+    },
+    {
+      "topic": "Pain",
+      "finding": "You reported pain.",
+      "meaning": "Pain makes it unsafe to assume that the current build phase should continue unchanged. The location, severity, timing, and whether it changes while running are not known.",
+      "action": "Do less than the plan, or stop a session, if pain worsens or changes your stride. Do not train through persistent pain; see a qualified health professional if it persists."
+    }
+  ],
+  "stamina": "Build from the 13.9-minute unbroken running block you have now, not from a continuous 10 km. The useful work is regular, comfortable run/walk practice across the planned training days. Keep the walking breaks when they help you finish without worsening pain. Let the existing plan make any increases in continuous running time or running distance gradually. Your best recent week was 5.3 km of running, so consistency around that current level is the foundation; the data does not show that you need faster running to build stamina. With 15 weeks until the 10 km goal, avoiding pain-related interruptions is more important than forcing a large jump now.",
+  "cautions": [
+    "You reported pain. Persistent pain is a reason to see a qualified health professional, not to train through.",
+    "Logged distance is not provided here, and it should not be used as a substitute for running distance.",
+    "A readiness score of 88 and 7.5 hours average sleep do not tell us whether the pain is safe to run on. Terrain, heat, fatigue, pain details, and sensor accuracy are not known."
+  ],
+  "confidence": 0.88
+}

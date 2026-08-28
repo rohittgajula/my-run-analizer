@@ -72,6 +72,10 @@ class AIAnalysis(OwnedByAthlete):
     model = models.CharField(max_length=60)
 
     result = models.JSONField()
+    # What validation found. Attached rather than silently rewriting the answer: a
+    # response quietly edited is one nobody can audit, and the findings are more
+    # useful surfaced than swallowed.
+    findings = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

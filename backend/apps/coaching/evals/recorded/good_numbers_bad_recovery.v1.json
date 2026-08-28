@@ -1,0 +1,57 @@
+{
+  "headline": "Recovery and regularity are the main priorities before trying to build more stamina for the 10 km goal.",
+  "doing_well": [
+    {
+      "topic": "Recent running",
+      "finding": "You logged 8 runs in the last 28 days.",
+      "meaning": "You are still practising the run/walk habit rather than starting from no recent running.",
+      "action": "Keep the next runs within the existing plan, and protect recovery between them."
+    },
+    {
+      "topic": "Continuous running",
+      "finding": "Your longest unbroken run recently is 15.2 minutes.",
+      "meaning": "You can already sustain a meaningful continuous running block. This is the useful starting point for aerobic development, meaning building the ability to keep moving at an easy effort.",
+      "action": "Use easy run/walk sessions to make continuous running feel repeatable, not to test whether you can exceed 15.2 minutes on a tired day."
+    },
+    {
+      "topic": "Recent weekly running",
+      "finding": "Your best recent week included 6.1 km of running distance.",
+      "meaning": "This is a current reference point for your running volume. The running distance, rather than any logged total, is the relevant measure.",
+      "action": "Avoid making a large jump above this recent level; follow the planned progression only when recovery is better."
+    }
+  ],
+  "to_improve": [
+    {
+      "topic": "Recovery readiness",
+      "finding": "Training readiness today is 1, which is also the lowest readiness in the last 28 days.",
+      "meaning": "This may mean that today is not a good day to add stress. Readiness measures can be affected by sleep, fatigue, and sensor error, so it does not diagnose a problem by itself.",
+      "action": "Choose less than the planned work today if needed: an easy shortened run/walk or rest is safer than pushing through a low-readiness day."
+    },
+    {
+      "topic": "Sleep",
+      "finding": "Average sleep over the last 28 days is 4.2 hours.",
+      "meaning": "This is a likely limit on recovery and on how consistently you can handle the plan. It may also contribute to low readiness.",
+      "action": "Make sleep and recovery the first training task. Do not compensate for missed training by making another run longer or harder."
+    },
+    {
+      "topic": "Consistency with the plan",
+      "finding": "The plan calls for 4 training days per week, while there were 8 runs in the last 28 days.",
+      "meaning": "The recent running pattern may be less frequent than the planned rhythm. More consistent easy exposure is generally more useful for stamina than occasional demanding runs, but recovery currently needs to come first.",
+      "action": "Aim to return to the planned rhythm only when you are recovering adequately. Keep sessions easy and do not add extra days to catch up."
+    },
+    {
+      "topic": "Overnight HRV",
+      "finding": "HRV last night was 28, compared with an average of 39 over the last 28 days.",
+      "meaning": "This lower reading may reflect stress or incomplete recovery, but one reading cannot establish fitness or a health issue.",
+      "action": "Treat it as another reason to keep today conservative, especially alongside readiness of 1 and 4.2 hours of average sleep."
+    }
+  ],
+  "stamina": "Build from the 15.2-minute unbroken run, not from a trained-runner standard. Keep the planned run/walk sessions easy enough that the running portions are repeatable. On better-recovered days, let the plan gradually extend the running portions; on low-readiness days, keep the run portions shorter or take rest rather than forcing a longer continuous block. The immediate goal is to make running close to 15.2 minutes feel routine across consistent sessions, while keeping running distance near recent levels until recovery supports the plan's next progression. There are 15 weeks until the 10 km goal, so protecting consistency now matters more than proving fitness in a single run.",
+  "cautions": [
+    "Training readiness is 1 today, matching the lowest value in the last 28 days.",
+    "Average sleep is 4.2 hours over the last 28 days.",
+    "HRV last night was 28 versus an average of 39 over the last 28 days.",
+    "If pain persists, see a qualified professional rather than training through it."
+  ],
+  "confidence": 1.0
+}

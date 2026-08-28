@@ -1,0 +1,50 @@
+{
+  "headline": "Your current running base is early but usable: prioritize regular run/walk sessions and gradual endurance rather than trying to run faster or continuously for longer right now.",
+  "doing_well": [
+    {
+      "topic": "Continuous running",
+      "finding": "Your longest unbroken run recently is 13.9 minutes.",
+      "meaning": "This shows you can already sustain a meaningful continuous running block within your run/walk training.",
+      "action": "Keep the easy effort that allowed this block; do not feel pressure to make every session continuous."
+    },
+    {
+      "topic": "Recent weekly running volume",
+      "finding": "Your best recent week included 5.3 km of running distance.",
+      "meaning": "You have a real starting point for building toward the 10 km goal, but it is still a modest base for that distance.",
+      "action": "Use this as a reference point and let the existing plan progress gradually rather than making a large jump."
+    },
+    {
+      "topic": "Readiness today",
+      "finding": "Your training readiness today is 88.",
+      "meaning": "This may suggest you are reasonably ready for the session planned today, but it does not replace paying attention to fatigue, pain, sleep, heat, or terrain.",
+      "action": "Follow the planned session only; reduce or stop if your body does not match the readiness score."
+    }
+  ],
+  "to_improve": [
+    {
+      "topic": "Training consistency",
+      "finding": "You ran 7 times in the last 28 days, while your plan has 4 training days per week.",
+      "meaning": "The main limiter may be consistency. With only 7 runs across 28 days, each run has to do too much work, which can make progression less reliable and raise injury risk if you try to catch up.",
+      "action": "Prioritize completing planned easy run/walk days at a manageable effort. Do not add harder sessions to compensate for missed days."
+    },
+    {
+      "topic": "Running share",
+      "finding": "Your average run fraction is 0.37.",
+      "meaning": "Most of your session distance is currently walking rather than running. That is appropriate for a beginner, but stamina will improve best through patiently increasing the running portions over time, not by forcing a faster pace.",
+      "action": "Keep the planned walk breaks. When the plan advances, make only its prescribed change to the run/walk balance; do not change both pace and running time at once."
+    },
+    {
+      "topic": "Sleep",
+      "finding": "Your average sleep over 28 days is 5.8 hours.",
+      "meaning": "This may limit recovery and make running feel harder. Sleep is only one factor, so the data cannot show the cause of any particular run.",
+      "action": "Treat lower-energy days cautiously: keep the session easy, shorten it if needed, or take recovery as the plan allows. Persistent pain is a reason to see a professional rather than train through it."
+    }
+  ],
+  "stamina": "Build from the 13.9-minute continuous-running block and the 0.37 average run fraction. On planned run/walk days, use an easy running effort around your typical running pace of 10:09/km only if that effort feels sustainable; pace can vary with heat, terrain, fatigue, and sensor error. Keep walk breaks rather than treating them as failure. Let the existing plan make gradual changes to either the length of running blocks or the amount of running within a session. Avoid trying to increase continuous running time, total running distance, and pace all at once. The near-term aim is repeatable sessions and a gradually larger share of comfortable running, not proving fitness in one run. There are 15 weeks until the 10 km goal, so steady attendance and recovery matter more than forcing a leap from the current 5.3 km best recent week.",
+  "cautions": [
+    "Average sleep is 5.8 hours over 28 days, which may reduce recovery.",
+    "The gap between 7 runs in the last 28 days and 4 planned training days per week suggests that trying to catch up with extra or harder running could increase injury risk.",
+    "Persistent pain should be assessed by a professional rather than trained through."
+  ],
+  "confidence": 0.84
+}

@@ -1,0 +1,38 @@
+{
+  "headline": "You have a workable base for a 10 km build: 12 runs in the last 28 days, with 15 weeks remaining until 2026-12-13.",
+  "doing_well": [
+    {
+      "topic": "Consistency",
+      "finding": "You completed 12 runs in the last 28 days while planning to train 4 days per week.",
+      "meaning": "This is a meaningful routine. Regular exposure is more useful for aerobic development and injury-risk reduction than trying to make individual runs hard.",
+      "action": "Keep aiming for the planned 4 training days per week, while allowing a missed or shortened run when recovery is poor."
+    },
+    {
+      "topic": "Continuous running",
+      "finding": "Your longest recent unbroken run is 34.0 minutes.",
+      "meaning": "You can already sustain a substantial continuous effort. That is a useful starting point for building the stamina needed for 10 km.",
+      "action": "Use the plan's easy running and run/walk sessions to make continuous running feel controlled, rather than trying to prove fitness by pushing the 34.0-minute block."
+    },
+    {
+      "topic": "Recovery background",
+      "finding": "Your 28-day average sleep is 7.8 hours, average HRV is 52, and training readiness today is 82.",
+      "meaning": "These numbers may suggest a reasonably supportive recovery background today, but they do not guarantee that a hard session is appropriate. Sleep quality, soreness, heat, terrain, fatigue, and sensor error are not known.",
+      "action": "Follow the planned session rather than adding work because readiness is 82. If you feel unusually sore, ill, or fatigued, reduce or skip the run."
+    }
+  ],
+  "to_improve": [
+    {
+      "topic": "Weekly running volume",
+      "finding": "Your best recent week of running distance is 14.0 km.",
+      "meaning": "For a 10 km goal, this is a base to develop gradually over the next 15 weeks. One best week does not show what you can safely sustain, and logged distance must not be substituted for running distance.",
+      "action": "Prioritize repeating manageable weeks before progressing. Let the existing plan set any increase; do not add extra distance, speed, or another training day."
+    }
+  ],
+  "stamina": "Build stamina by making the planned 4 weekly sessions repeatable. Your current concrete anchor is a 34.0-minute unbroken run: keep the easy portions genuinely comfortable enough that you finish with control. On run/walk days, use the walk breaks as planned instead of treating them as failure; they let you accumulate running distance with less fatigue. Repeat tolerable workload before progressing, and use the plan\u2014not readiness, a single good run, or the 14.0 km best week\u2014to decide when to extend running. The exact running-distance progression is not known from this data.",
+  "cautions": [
+    "A single 34.0-minute continuous run and a best week of 14.0 km are not enough to establish 10 km fitness. Heat, terrain, sleep, fatigue, and sensor error can affect individual runs.",
+    "Pain that persists is a reason to see a qualified professional rather than train through it.",
+    "Your logged distance is not provided here and should not be treated as running distance."
+  ],
+  "confidence": 0.78
+}

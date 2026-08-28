@@ -1,0 +1,24 @@
+{
+  "headline": "With 0 runs in the last 28 days and 15 weeks until the 10 km goal, the priority is to restart consistently and build cautiously rather than judge fitness.",
+  "doing_well": [],
+  "to_improve": [
+    {
+      "topic": "Recent running consistency",
+      "finding": "Runs in the last 28 days are 0, and best recent weekly running distance is 0.0 km.",
+      "meaning": "There is no recent running base shown in the data. This does not say what you are capable of, but it means stamina and impact tolerance need to be rebuilt from the start.",
+      "action": "Use the existing 4-day-per-week schedule as a ceiling, not a requirement. Begin with fewer sessions if needed to recover well, and add sessions only when the current level feels manageable and leaves no persistent pain."
+    },
+    {
+      "topic": "Goal preparation",
+      "finding": "The goal is a 10 km on 2026-12-13, with 15 weeks remaining.",
+      "meaning": "There is time to make progress, but the outcome will depend more on accumulating regular run/walk sessions than on trying to make up for the recent gap with hard or long runs.",
+      "action": "Follow the prescribed build plan conservatively. Keep run/walk intervals easy enough to repeat, retain the walking breaks, and do not add distance, pace work, or extra sessions beyond the plan."
+    }
+  ],
+  "stamina": "Build stamina by first establishing repeatable run/walk sessions, not by testing how far you can run continuously. Since the data shows 0 runs in the last 28 days, treat each planned session as practice for returning to regular running. Keep the run portions controlled, take the planned walk breaks, and allow recovery between sessions. When the current plan is consistently manageable, progress only as the plan prescribes. There is no recent longest run, pace, heart-rate, terrain, sleep, fatigue, or pain data, so it is not possible to set a safe starting interval or distance from this information alone.",
+  "cautions": [
+    "A rapid jump from 0 recent runs to frequent, long, or hard running could raise injury risk.",
+    "Persistent pain is a reason to see a qualified professional rather than train through it."
+  ],
+  "confidence": 0.94
+}
