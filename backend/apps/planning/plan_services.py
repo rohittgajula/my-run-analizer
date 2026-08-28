@@ -125,6 +125,41 @@ def snapshot_for(athlete: Athlete, day: dt.date | None = None) -> WellnessSnapsh
     )
 
 
+def session_on(athlete: Athlete, day: dt.date) -> Session | None:
+    """The planned session for one date, before any readiness adjustment."""
+    plan = plan_for(athlete)
+    if plan is None:
+        return None
+    return next(
+        (s for week in plan.weeks for s in week.sessions
+         if s.date == day and not s.optional),
+        None,
+    )
+
+
+def next_training_session(
+    athlete: Athlete, after: dt.date, limit_days: int = 14
+) -> Session | None:
+    """The next real session strictly after `after`.
+
+    Optional walks are skipped: easing a session that was never owed says nothing.
+    """
+    plan = plan_for(athlete)
+    if plan is None:
+        return None
+
+    candidates = sorted(
+        (s for week in plan.weeks for s in week.sessions
+         if not s.optional and after < s.date <= after + dt.timedelta(days=limit_days)),
+        key=lambda s: s.date,
+    )
+    return candidates[0] if candidates else None
+
+
+def has_trained_on(athlete: Athlete, day: dt.date) -> bool:
+    return Activity.objects.filter(athlete=athlete, local_date=day).exists()
+
+
 def today_session(athlete: Athlete) -> tuple[Session | None, Adjustment | None, str]:
     """Today's prescription, after the readiness rules have had their say.
 

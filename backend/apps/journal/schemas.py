@@ -15,8 +15,15 @@ class ChatFacts(BaseModel):
     model_config = {"extra": "forbid"}
 
     applies_to_date: dt.date = Field(
-        description="Which day's SESSION this bears on. Usually today. "
-        "'I slept badly last night' written in the morning is about TODAY."
+        description="The day this is ABOUT. For a run already done, the day of that "
+        "run. For how they are feeling now, today."
+    )
+    describes_completed_run: bool = Field(
+        description="True if they describe a run that has ALREADY happened "
+        "('ran 3k this morning', 'yesterday's run felt hard'). False if they are "
+        "describing how they feel, asking a question, or talking about a run still "
+        "to come. This decides whether the consequences land on today's session or "
+        "the next one."
     )
     rpe: int | None = Field(description="Perceived effort 1-10 if stated, else null.")
     energy: int | None = Field(description="1-10 if stated, else null.")

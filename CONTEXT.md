@@ -311,6 +311,15 @@ athlete actually reads.
 answers; a deterministic sentence states what changed. The model is never the one who
 says "take it easy today", so it cannot contradict `readiness.py`.
 
+**Which session a message affects is decided in Python, and it is not always today.**
+Reporting a sore knee *after* this morning's run cannot change this morning's run —
+the first version dropped "today's session" for a session already completed, which is
+both wrong and useless. Two independent signals push it forward: the model's
+`describes_completed_run` flag (a language question), and an activity already recorded
+for that day (covers a message that never mentions the run). A rest day also falls
+through to the next session, because "nothing changes" reads as the pain being
+ignored, and that is how someone stops reporting it.
+
 Pain and illness flags look back 3 days: pain reported yesterday has not evaporated
 because nobody mentioned it this morning.
 

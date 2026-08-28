@@ -25,7 +25,11 @@ from apps.coaching.client import AIUnavailable
 from apps.coaching.context import athlete_state
 from apps.coaching.models import AIAnalysis
 from apps.coaching.services import _run
-from apps.planning.plan_services import snapshot_for, today_session
+from apps.planning.plan_services import (
+    has_trained_on, next_training_session, session_on, snapshot_for,
+)
+from planning.readiness import apply as ease
+from planning.readiness import assess
 
 from .models import JournalEntry
 from .schemas import ChatTurn
@@ -44,8 +48,9 @@ First, extract only what is actually stated or clearly implied. Do not infer pai
 tiredness, or illness from a bad night. Where a value is not mentioned, return null \
 rather than guessing — a wrong fact here changes what they are told to do tomorrow.
 
-`applies_to_date` is which day's SESSION this bears on, not which day the words \
-describe. "I slept badly last night", written in the morning, is about TODAY's session.
+Set `describes_completed_run` carefully. It decides whether the consequences land on \
+today's session or the next one, and getting it wrong means telling someone to skip a \
+session they have already done.
 
 Second, reply to them. Acknowledge what they said, answer any question they asked, and \
 be specific to their numbers. Do NOT tell them whether to train, rest, or change a \
@@ -62,31 +67,81 @@ def _apply_facts(entry: JournalEntry, facts) -> None:
     entry.applies_to_date = facts.applies_to_date
 
 
-def _consequence(athlete: Athlete) -> str:
+def _target_session(athlete: Athlete, entry: JournalEntry):
+    """Which session this actually affects, and how to name it.
+
+    Reporting a sore knee *after* this morning's run cannot change this morning's
+    run. Dropping "today's session" in that case is both wrong and useless — the
+    training already happened. The consequence belongs to the next one.
+
+    Two independent signals decide it, either being enough:
+
+    * the athlete described a run that has already happened, and
+    * an activity is already recorded for that day.
+
+    The first covers the gap before Garmin syncs; the second covers a message that
+    never mentions the run at all.
+    """
+    day = entry.applies_to_date
+    already_ran = bool((entry.extracted or {}).get("describes_completed_run")) or has_trained_on(
+        athlete, day
+    )
+
+    if not already_ran:
+        session = session_on(athlete, day)
+        if session is not None:
+            return session, ("today" if day == athlete.local_today else "that day"), day
+        # A rest day has nothing to ease, but the report has not stopped mattering.
+        # Saying "nothing changes" here reads as the pain being ignored, so it falls
+        # through to the session that IS affected.
+
+    session = next_training_session(athlete, day)
+    return session, "next", session.date if session else None
+
+
+def _when(label: str, date) -> str:
+    if label == "today":
+        return "Today's session"
+    if date is None:
+        return "Your next session"
+    return f"Your next session ({date:%a %-d %b})"
+
+
+def _consequence(athlete: Athlete, entry: JournalEntry) -> str:
     """What actually changed, in deterministic words.
 
-    Assembled after the facts land, from the same code path that prescribes the
-    session — so the sentence the athlete reads and the session they are given can
-    never disagree.
+    Assembled from the same code that prescribes the session, so the sentence the
+    athlete reads and the session they are given can never disagree.
     """
-    session, adjustment, mode = today_session(athlete)
+    session, label, date = _target_session(athlete, entry)
+    adjustment = assess(snapshot_for(athlete))
+    noun = _when(label, date)
 
-    if adjustment and adjustment.drop_session:
+    if session is None:
+        if adjustment.changed:
+            # The flags stand even with nothing scheduled to apply them to; they will
+            # be applied to whatever is prescribed next.
+            return (
+                "There is no session scheduled in the next two weeks to adjust, but "
+                "this is recorded and will apply to whatever comes next. "
+                + " ".join(adjustment.reasons)
+            )
+        return "Nothing in the plan changes — no session is scheduled to adjust."
+
+    if adjustment.drop_session:
         return (
-            "Based on that, today's session is dropped — walk if you want to move. "
+            f"{noun} is dropped — walk if you want to move. " + " ".join(adjustment.reasons)
+        )
+    if adjustment.changed:
+        eased = ease(session, adjustment)
+        return (
+            f"{noun} has been eased to {eased.run_minutes:.0f} minutes of running. "
             + " ".join(adjustment.reasons)
         )
-    if adjustment and adjustment.changed:
-        return (
-            f"Based on that, today has been eased to {session.run_minutes:.0f} minutes "
-            f"of running. " + " ".join(adjustment.reasons)
-        )
-    if session:
-        return (
-            f"Today's session is unchanged: {session.run_minutes:.0f} minutes running, "
-            f"{session.walk_minutes:.0f} walking."
-        )
-    return f"Nothing in the plan changes — today is a {mode.replace('_', ' ')} day."
+    return (
+        f"{noun} is unchanged: {session.run_minutes:.0f} minutes running, "
+        f"{session.walk_minutes:.0f} walking."
+    )
 
 
 def chat(athlete: Athlete, message: str) -> JournalEntry:
@@ -128,7 +183,7 @@ def chat(athlete: Athlete, message: str) -> JournalEntry:
     entry.save()
 
     # The deterministic half, computed AFTER the facts are stored so it reflects them.
-    entry.reply = f"{model_reply}\n\n{_consequence(athlete)}"
+    entry.reply = f"{model_reply}\n\n{_consequence(athlete, entry)}"
     entry.save(update_fields=["reply"])
     return entry
 
