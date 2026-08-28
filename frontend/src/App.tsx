@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { AuthProvider, useAuth } from './lib/AuthContext'
 import { Shell } from './components/Shell'
 import Activities from './pages/Activities'
+import Chat from './pages/Chat'
 import ActivityDetail from './pages/ActivityDetail'
 import Health from './pages/Health'
 import Home from './pages/Home'
@@ -47,6 +48,7 @@ export default function App() {
           {/* Onboarding renders without the shell: there is nowhere else to go yet. */}
           <Route path="/onboarding" element={<RequireAuth bare><Onboarding /></RequireAuth>} />
           <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
+          <Route path="/coach" element={<RequireAuth><Chat /></RequireAuth>} />
           <Route path="/activities" element={<RequireAuth><Activities /></RequireAuth>} />
           <Route path="/activities/:id" element={<RequireAuth><ActivityDetail /></RequireAuth>} />
           <Route path="/health" element={<RequireAuth><Health /></RequireAuth>} />

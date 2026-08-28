@@ -128,10 +128,27 @@ def athlete_state(athlete: Athlete) -> dict:
         ]
 
     snapshot = snapshot_for(athlete)
-    state["readiness_flags"] = {
-        "pain_reported": snapshot.pain_reported,
-        "illness_reported": snapshot.illness_reported,
+    state["reported_by_athlete"] = {
+        "pain": snapshot.pain_reported,
+        "illness": snapshot.illness_reported,
     }
+
+    # What they have said recently, in their own words. The only input here Garmin
+    # cannot supply, and usually the one that explains the numbers.
+    from apps.journal.models import JournalEntry
+
+    entries = JournalEntry.objects.filter(
+        athlete=athlete, applies_to_date__gte=today - dt.timedelta(days=10)
+    ).order_by("-applies_to_date")[:6]
+    if entries:
+        state["recent_notes"] = [
+            {
+                "date": str(e.applies_to_date),
+                "said": (e.extracted or {}).get("notes_summary") or e.text[:160],
+                "rpe": e.rpe,
+            }
+            for e in entries
+        ]
     return state
 
 

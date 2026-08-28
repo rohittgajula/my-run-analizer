@@ -1,7 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { api, type Activity } from '../lib/auth'
+
+type Series = {
+  points: Array<Record<string, number | null>>
+  has_hr: boolean
+  has_cadence: boolean
+  has_altitude: boolean
+}
 import { RunTruth } from '../components/RunTruth'
+import { RunTrace } from '../components/Charts'
+import { Card } from '../components/Stat'
+import { RunCoach } from '../components/RunCoach'
 import { day, duration, km, metres, pace } from '../lib/format'
 
 export default function ActivityDetail() {
@@ -9,6 +19,11 @@ export default function ActivityDetail() {
   const { data, isPending, error } = useQuery({
     queryKey: ['activity', id],
     queryFn: () => api<Activity>(`/activities/${id}/`),
+  })
+  const series = useQuery({
+    queryKey: ['activity-series', id],
+    queryFn: () => api<Series>(`/activities/${id}/series/`),
+    retry: false,
   })
 
   if (isPending) return <main className="page"><p className="muted">Loading…</p></main>
@@ -42,6 +57,43 @@ export default function ActivityDetail() {
                 'invented rather than measured. Nothing is shown rather than something wrong.'}
           </p>
         </section>
+      )}
+
+      {data.metrics && <RunCoach id={Number(id)} />}
+
+      {series.data && series.data.points.length > 0 && (
+        <>
+          <Card
+            title="Pace"
+            description="Shaded bands are your running blocks. Lower is faster — the axis is inverted so the line goes up when you speed up."
+          >
+            <RunTrace points={series.data.points} series="pace" blocks={data.segments} invert unit="/km" />
+          </Card>
+
+          {series.data.has_hr && (
+            <Card
+              title="Heart rate"
+              description="Read it against the shaded run blocks: 160 bpm mid-block and 160 bpm while walking mean very different things."
+            >
+              <RunTrace points={series.data.points} series="hr" blocks={data.segments} unit="bpm" />
+            </Card>
+          )}
+
+          {series.data.has_cadence && (
+            <Card
+              title="Cadence"
+              description="Steps per minute, both legs. This is the signal that separates running from walking — the shaded bands are exactly where it crossed your threshold."
+            >
+              <RunTrace points={series.data.points} series="cadence" blocks={data.segments} unit="spm" />
+            </Card>
+          )}
+
+          {series.data.has_altitude && (
+            <Card title="Elevation" description="Hills explain a lot of what heart rate does.">
+              <RunTrace points={series.data.points} series="altitude" blocks={data.segments} unit="m" />
+            </Card>
+          )}
+        </>
       )}
 
       {segments.length > 0 && (

@@ -100,7 +100,10 @@ def _run(
             "activity": activity,
             "prompt_version": PROMPT_VERSION,
             "model": stats["model"],
-            "result": result.model_dump(),
+            # mode="json" so dates and enums become primitives. A plain
+            # model_dump() puts date objects in a JSONField and the write dies
+            # AFTER the paid call has already been made.
+            "result": result.model_dump(mode="json"),
         },
     )
     return result, False

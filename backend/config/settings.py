@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "apps.activities",
     "apps.planning",
     "apps.coaching",
+    "apps.journal",
 ]
 
 MIDDLEWARE = [

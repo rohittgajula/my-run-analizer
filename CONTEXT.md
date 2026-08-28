@@ -4,7 +4,7 @@
 > session reads. If something here contradicts the code, the code wins and this file is
 > stale — say so.
 
-Last updated: **2026-08-28** · Status: **M4 coaching layer live against real data.** Activity charts, pagination, filtering, calendar and editable race dates are outstanding.
+Last updated: **2026-08-28** · Status: **M4 live — coaching, chat, run analysis and activity charts.** Pagination, filtering, calendar and editable race dates are outstanding.
 
 ---
 
@@ -285,6 +285,26 @@ separately:
 Neither reaches the ideal, and the plan says so rather than inventing a peak it cannot
 safely reach — the caps outrank the target, always. Expected outcome is a run/walk
 finish, stated plainly.
+
+### Chat, and why it is safe
+
+`/coach` takes free text — a run, a bad night, a sore knee, a question — and the
+consequences are deterministic. Verified end to end on a real message:
+
+> *"ran about 3k this morning, legs felt heavy after 2k and my right knee was a bit
+> sore near the end. slept badly, maybe 5 hours. can i still do the long run?"*
+
+The model extracted `pain_reported: true, pain_location: right knee` and **deferred**:
+*"Use the session-safety guidance that follows."* Python's `flags_for` →
+`snapshot_for` → `assess` then dropped the session and appended the sentence the
+athlete actually reads.
+
+**The reply is assembled in two halves on purpose.** The model acknowledges and
+answers; a deterministic sentence states what changed. The model is never the one who
+says "take it easy today", so it cannot contradict `readiness.py`.
+
+Pain and illness flags look back 3 days: pain reported yesterday has not evaporated
+because nobody mentioned it this morning.
 
 ### The AI layer
 

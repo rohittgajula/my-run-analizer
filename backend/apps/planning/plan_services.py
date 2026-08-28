@@ -98,11 +98,20 @@ def snapshot_for(athlete: Athlete, day: dt.date | None = None) -> WellnessSnapsh
         .order_by("-metric_date")[:29]
     )
     if not rows:
-        return WellnessSnapshot()
+        # No wellness data does NOT mean no signals — a pain report still counts.
+        from apps.journal.services import flags_for
+
+        return WellnessSnapshot(**flags_for(athlete, day))
 
     today = rows[0] if rows[0].metric_date == day else None
     history = [r.hrv_overnight_avg for r in rows[1:] if r.hrv_overnight_avg]
     resting = [r.resting_hr for r in rows[1:] if r.resting_hr]
+
+    # Subjective flags come from what the athlete actually said, and they outrank
+    # every sensor reading below: excellent readiness does not overrule a pain report.
+    from apps.journal.services import flags_for
+
+    flags = flags_for(athlete, day)
 
     return WellnessSnapshot(
         readiness=today.training_readiness if today else None,
@@ -111,6 +120,8 @@ def snapshot_for(athlete: Athlete, day: dt.date | None = None) -> WellnessSnapsh
         hrv_baseline=history,
         resting_hr=today.resting_hr if today else None,
         resting_hr_baseline=resting,
+        pain_reported=flags["pain_reported"],
+        illness_reported=flags["illness_reported"],
     )
 
 

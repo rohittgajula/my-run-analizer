@@ -1,6 +1,6 @@
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart,
-  ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 
 /**
@@ -18,15 +18,26 @@ const GRID = { stroke: '#1c1c22', strokeDasharray: '2 4' }
 const shortDay = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
 
-function Box({ children }: { children: React.ReactElement }) {
+function Box({ children, tall }: { children: React.ReactElement; tall?: boolean }) {
   return (
-    <div className="chart">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className={tall ? 'chart chart-tall' : 'chart'}>
+      {/* debounce={0} because the default waits for a resize event that never comes
+          in a backgrounded tab: the container measures zero on first paint and then
+          nothing re-triggers it, leaving an empty div where a chart should be. */}
+      <ResponsiveContainer width="100%" height="100%" debounce={0}>
         {children}
       </ResponsiveContainer>
     </div>
   )
 }
+
+// Charts render their final state immediately rather than animating in.
+//
+// Three reasons, in order of importance: a reader should not have to wait to read a
+// number; an animation driven by requestAnimationFrame never completes in a
+// backgrounded tab, so the chart sits blank; and every screenshot taken mid-animation
+// shows a line that stops halfway, which looks exactly like missing data.
+const NO_ANIMATION = { isAnimationActive: false } as const
 
 const tooltip = {
   contentStyle: {
@@ -70,6 +81,7 @@ export function TrendLine({
           strokeWidth={2}
           dot={false}
           connectNulls
+          {...NO_ANIMATION}
         />
       </LineChart>
     </Box>
@@ -103,6 +115,7 @@ export function TrendArea({
           strokeWidth={2}
           fill="url(#fade)"
           connectNulls
+          {...NO_ANIMATION}
         />
       </AreaChart>
     </Box>
@@ -125,7 +138,7 @@ export function JudgedBars({
         <XAxis dataKey="date" tickFormatter={shortDay} {...AXIS} minTickGap={24} />
         <YAxis domain={domain ?? ['auto', 'auto']} {...AXIS} width={38} />
         <Tooltip {...tooltip} labelFormatter={(v) => shortDay(String(v))} cursor={{ fill: '#12121a' }} />
-        <Bar dataKey={dataKey} radius={[2, 2, 0, 0]}>
+        <Bar dataKey={dataKey} radius={[2, 2, 0, 0]} {...NO_ANIMATION}>
           {data.map((row, index) => (
             <Cell key={index} fill={colour(row)} />
           ))}
@@ -163,6 +176,74 @@ export function Ring({
         />
       </svg>
       <div className="ring-value">{value ?? '—'}</div>
+    </div>
+  )
+}
+
+
+/**
+ * The run itself, over time.
+ *
+ * Run blocks are shaded behind the trace so heart rate and cadence can be read
+ * against what the athlete was actually doing — a heart rate of 160 means one thing
+ * mid-run block and another thing while walking, and a chart that hides the
+ * difference invites the wrong reading.
+ */
+export function RunTrace({
+  points, series, blocks, invert, unit,
+}: {
+  points: Array<Record<string, number | null>>
+  series: 'hr' | 'cadence' | 'pace' | 'altitude'
+  blocks?: Array<{ kind: string; start_offset_s: number; duration_s: number }>
+  invert?: boolean
+  unit?: string
+}) {
+  const colour = { hr: '#ff4d6d', cadence: '#3ddc97', pace: '#38e1ff', altitude: '#8a8a99' }[series]
+  const runBlocks = (blocks ?? []).filter((b) => b.kind === 'run')
+
+  const label = (value: number) =>
+    series === 'pace'
+      ? `${Math.floor(value / 60)}:${String(Math.round(value) % 60).padStart(2, '0')}`
+      : String(Math.round(value))
+
+  return (
+    <div className="chart chart-tall">
+      <ResponsiveContainer width="100%" height="100%" debounce={0}>
+        <LineChart data={points} margin={{ top: 6, right: 8, left: -20, bottom: 0 }}>
+          <CartesianGrid {...GRID} vertical={false} />
+          {runBlocks.map((block, index) => (
+            <ReferenceArea
+              key={index}
+              x1={block.start_offset_s}
+              x2={block.start_offset_s + block.duration_s}
+              fill="#38e1ff"
+              fillOpacity={0.07}
+              strokeOpacity={0}
+            />
+          ))}
+          <XAxis
+            dataKey="t"
+            type="number"
+            domain={['dataMin', 'dataMax']}
+            tickFormatter={(v) => `${Math.round(Number(v) / 60)}m`}
+            {...AXIS}
+            minTickGap={30}
+          />
+          <YAxis
+            domain={['auto', 'auto']}
+            reversed={invert}
+            tickFormatter={(v) => label(Number(v))}
+            {...AXIS}
+            width={42}
+          />
+          <Tooltip
+            {...tooltip}
+            labelFormatter={(v) => `${Math.floor(Number(v) / 60)}:${String(Number(v) % 60).padStart(2, '0')}`}
+            formatter={(v) => [`${label(Number(v))}${unit ? ` ${unit}` : ''}`, series]}
+          />
+          <Line type="monotone" dataKey={series} stroke={colour} strokeWidth={1.6} dot={false} connectNulls {...NO_ANIMATION} />
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   )
 }

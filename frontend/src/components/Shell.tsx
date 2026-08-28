@@ -8,6 +8,7 @@ type GarminStatus = { connected: boolean; name: string; last_sync: string | null
 
 const NAV = [
   { to: '/', label: 'Today', end: true },
+  { to: '/coach', label: 'Coach' },
   { to: '/activities', label: 'Activities' },
   { to: '/health', label: 'Health' },
   { to: '/plan', label: 'Plan' },
