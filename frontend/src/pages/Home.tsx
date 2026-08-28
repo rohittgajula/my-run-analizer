@@ -25,9 +25,11 @@ export default function Home() {
     queryKey: ['wellness', 28],
     queryFn: () => api<DailyMetrics[]>('/wellness/?days=28'),
   })
+  // /activities/ is paginated, so the response is {count, results}, not an array.
+  // Asking for one page of runs is also all this card needs.
   const activities = useQuery({
-    queryKey: ['activities'],
-    queryFn: () => api<Activity[]>('/activities/'),
+    queryKey: ['recent-runs'],
+    queryFn: () => api<{ results: Activity[] }>('/activities/?ran=true&page_size=5'),
   })
   const plan = useQuery({
     queryKey: ['plan-today'],
@@ -51,7 +53,7 @@ export default function Home() {
       ? days.slice(0, 7).reduce((total, d) => total + Math.max(8 - (sleepHours(d.sleep_seconds) ?? 8), 0), 0)
       : null
 
-  const lastRun = activities.data?.find((a) => a.metrics && a.metrics.run_block_count > 0)
+  const lastRun = activities.data?.results?.find((a) => a.metrics && a.metrics.run_block_count > 0)
 
   return (
     <main className="page">

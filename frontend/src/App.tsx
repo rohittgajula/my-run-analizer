@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { AuthProvider, useAuth } from './lib/AuthContext'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { Shell } from './components/Shell'
 import Activities from './pages/Activities'
 import Calendar from './pages/Calendar'
@@ -29,7 +30,15 @@ function RequireAuth({ children, bare }: { children: ReactNode; bare?: boolean }
   if (!athlete.onboarding_complete && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />
   }
-  return bare ? <>{children}</> : <Shell>{children}</Shell>
+  // The boundary sits INSIDE the shell, so a page that throws still leaves the
+  // navigation usable rather than stranding you on a blank screen.
+  return bare ? (
+    <ErrorBoundary>{children}</ErrorBoundary>
+  ) : (
+    <Shell>
+      <ErrorBoundary>{children}</ErrorBoundary>
+    </Shell>
+  )
 }
 
 function GuestOnly({ children }: { children: ReactNode }) {
