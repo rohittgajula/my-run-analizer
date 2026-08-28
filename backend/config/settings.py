@@ -6,6 +6,7 @@ a code change, and so a bad value is a config bug rather than a deploy.
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,7 +31,14 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_filters",
     "django_celery_beat",
+    # Bundled with simplejwt. Without it in INSTALLED_APPS *and* migrated,
+    # ROTATE_REFRESH_TOKENS and BLACKLIST_AFTER_ROTATION are silently inert:
+    # the settings are accepted, logout appears to work, and nothing is revoked.
+    "rest_framework_simplejwt.token_blacklist",
     # Project apps go here as you create them at M1. See docs/ROADMAP.md.
+    "apps.athletes",
+    "apps.ingest",
+    "apps.activities",
 ]
 
 MIDDLEWARE = [
@@ -103,12 +111,40 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    # AllowAny does not mean unthrottled. These three are the public endpoints, and
+    # an unthrottled login on a public host is found by scanners within days.
+    "DEFAULT_THROTTLE_RATES": {
+        "register": "5/hour",   # per IP
+        "login": "10/hour",     # per IP — brute-force ceiling
+        "refresh": "60/hour",   # per IP — generous; a 15-min access token refreshes often
+        "garmin": "10/hour",    # per user — Garmin rate-limits by IP, see docs/HOSTING.md
+        "ai": "30/day",         # per user — this one is money, see docs/COST.md
+    },
 }
+
+# Access token: 15 minutes, held in JS memory only on the client.
+# Refresh token: 7 days, in an httpOnly cookie the client cannot read.
+# localStorage was rejected for either — XSS can read it, and a JWT stored there
+# cannot be revoked on logout.
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    # Without this, rotation issues a new refresh token and leaves the OLD one valid
+    # for its full 7 days — a stolen one keeps working alongside the real one.
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
+}
+
+REFRESH_COOKIE_NAME = "refresh_token"
+# Scoped so the cookie is not attached to every API call, only the auth endpoints.
+REFRESH_COOKIE_PATH = "/api/auth/"
 
 CORS_ALLOWED_ORIGINS = [
     o for o in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:5173").split(",") if o

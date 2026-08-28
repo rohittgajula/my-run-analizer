@@ -4,7 +4,7 @@
 > session reads. If something here contradicts the code, the code wins and this file is
 > stale — say so.
 
-Last updated: **2026-08-19** · Status: **M0 complete and running. M1 next.**
+Last updated: **2026-08-28** · Status: **M1b complete. Garmin connect is built but not yet used with real credentials.**
 
 ---
 
@@ -54,8 +54,13 @@ speed but not in cadence (≥140 spm ≈ running). Ported from `run-project`.
 
 | | |
 |---|---|
-| **Rohit** | All backend. Models, metrics, plan engine, prediction, the AI service layer, Celery, tests. |
-| **Claude** | All frontend (React/TS). Backend *specs, reviews and guidance* — not backend code. Keeps this file current. |
+| **Rohit** | Git — staging, commits, history, remote. Claude never runs git; it hands over a commit message. |
+| **Claude** | Building, as of 2026-08-28: frontend *and* backend. |
+
+**This changed at M1a.** The project was set up with Rohit writing all backend code so the
+AI-integration layer would be learned by hand; he handed building over instead. M4–M6 —
+the AI layer, and the stated reason the project exists — is the part worth checking before
+Claude writes it.
 
 The AI-integration layer is the thing worth learning by hand. Claude writes specs precise
 enough to implement against — signatures, behaviour, test cases — and reviews what comes
@@ -76,6 +81,7 @@ retyped. Solved problem, no learning value left in it.
 | Garmin auth | **Connect fresh** from this app's UI. No token sharing with `run-project`. |
 | Pushing | **Rohit only.** Claude commits locally, never pushes. |
 | Journal | **Mandatory after every run**, and an input to scheduling *and* prediction. |
+| Hosting | **Public, with open registration.** Multi-tenancy stops being theoretical. Three consequences — unbounded AI cost, Garmin's per-IP rate limit, and holding other people's health data — are worked through in [docs/HOSTING.md](docs/HOSTING.md). |
 
 ---
 
@@ -189,8 +195,11 @@ limitation is why this project exists.
 Garmin layer transplants cleanly and the framework is not the thing being learned.
 Pydantic pulled in **specifically** for AI response validation.
 
-**Frontend** — React 18 + TypeScript + Vite + TanStack Query + Recharts, **plus PWA**
-(`vite-plugin-pwa`).
+**Frontend** — React 19 + TypeScript + Vite + TanStack Query + Recharts, **plus PWA**
+(`vite-plugin-pwa`). Theme is pitch black with a **monochrome interface**; colour appears
+only where it carries information. The tokens are in `src/styles.css` — `--ui` for
+chrome, `--data` / `--ok` / `--bad` / `--warn` for meaning. Do not tint anything for
+decoration; that rule is the whole design.
 
 **AI** — Gemini primary, behind a provider-agnostic interface. Model IDs live in env
 (`GEMINI_LITE_MODEL` / `GEMINI_FAST_MODEL` / `GEMINI_COACH_MODEL` / `GEMINI_DEEP_MODEL`),
@@ -261,47 +270,75 @@ the four model IDs there** — nothing reads a model name from code.
 
 ## Current state
 
-**M0 done.** Six services up: backend, worker, beat, db, redis, frontend. `/api/health/`
-opens a cursor and pings Redis rather than returning a constant. Two tests pass. The
-production frontend build is clean and emits a service worker and manifest.
+**M1a and M1b done.** Register → onboarding → dashboard → settings → logout works end to
+end. Garmin connect / sync / disconnect endpoints and UI are built and fail cleanly
+(400, never 500) with no token stored. **37 tests pass.**
 
-Written at M0, deliberately minimal — the project shell and nothing more:
+Auth is JWT with split storage: **access token in a JS module variable** (15 min),
+**refresh token in an httpOnly cookie** (7 days, `SameSite=Lax`, `path=/api/auth/`,
+rotated on use, blacklisted on logout). Verified in a live browser: `localStorage`
+empty, `document.cookie` empty, session survives a full reload.
 
-```
-backend/   config/{settings,urls,celery,health,wsgi,asgi}.py · manage.py
-           requirements.txt · Dockerfile · pytest.ini · tests/test_health.py
-frontend/  full React/TS/Vite/PWA scaffold
-docker-compose.yml · .env.example
-```
+Models: `Athlete` (+ `OwnedByAthlete`, `AthleteScopedMixin`), `RawFitFile`, `Activity`,
+`ActivityRecord`. `Segment` belongs to M2, with the algorithm that produces it.
 
-**There is no `apps/` directory and no app routing.** `INSTALLED_APPS` holds only Django
-and third-party entries with a comment marking where project apps go. `/api/health/` is
-wired straight into `config/urls.py` — one view, no app layer to route through. Rohit
-creates each app at M1 as he needs it; scaffolding them in advance would be Claude
-writing the backend by the back door.
+**Not yet done:** nobody has connected a real Garmin account. That is Rohit's to do —
+the flow asks for the Connect password once, exchanges it for an OAuth token, and never
+stores or logs it, but Claude does not enter credentials.
 
-**M1 starts from an empty `backend/`** — `startapp`, then models.
+### Deviations from `run-project` worth knowing
 
-Three things fixed during M0 that would each have cost an afternoon later:
+- **The FIT parser produces its own `ParsedRecord`** rather than importing
+  `analysis.segmentation.Sample` and smuggling extra fields through `__dict__`. The
+  parser now imports nothing from the app: it produces data, segmentation consumes it.
+- **`segmentation_version` (int) rather than `metrics_current` (bool)** — a flag says a
+  row is stale but never how stale. An integer makes "everything before v4" a query and
+  tells you which algorithm produced any given number.
+- **`available_days` holds availability only**, not day types. The generator owns what
+  each day is for.
 
-- **`beat` raced the migrations.** It started alongside the backend, queried
-  `django_celery_beat_periodictask` before the table existed, and exited 1. `backend` now
-  has a healthcheck, and `worker`/`beat` gate on `service_healthy` — which, because the
-  backend runs `migrate` before `runserver`, also means the schema exists.
-- **`npm run build` failed on `tsc`** over `process.env` in `vite.config.ts`, while dev
-  ran fine. This is the identical failure that still blocks `run-project`'s production
-  build. Fixed at M0 by declaring `node` types.
-- **The dev service worker is disabled on purpose.** One caching assets while you edit
-  them produces stale-bundle bugs that look like your change did nothing.
+### Bugs caught during M1a/M1b, each of which would have cost an afternoon
 
-**Unverified:** service-worker *registration* could not be tested here — the in-app
-browser refuses it with a generic "unknown error" despite a secure context and a
-correctly-served `sw.js`, which is a sandbox policy rather than a defect. The artifacts
-are confirmed present and well-formed (valid manifest, 8 precache entries, 192/512 icons).
-**Confirm the actual install on your phone at M9**, over HTTPS or a tunnel — `localhost`
-on a laptop will not prove it.
+- **`ingest_fit` marked failures inside its own `@transaction.atomic`**, so
+  `status=FAILED` and the error text were rolled back with everything else. A bad file
+  would sit at PENDING forever, retried, with nothing anywhere saying why. Failure
+  marking now lives outside the transaction; the writes stay inside it.
+- **Worker and beat ran a stale image.** Compose builds a *separate* image per service
+  from the same context unless `image:` is set, so `docker compose build backend` left
+  the other two behind and they died with `ModuleNotFoundError` for a package the
+  backend visibly had. All three now share one image.
+- **Registration silently skipped onboarding.** Adopting the session re-rendered the
+  route guards, and the guard's redirect to `/` beat `navigate('/onboarding')` every
+  time. Fixed with an explicit `onboarding_complete` flag — the router reads data, it
+  does not race a redirect.
+- **`npm run build` failed on TS narrowing** in a hoisted `async function` capturing a
+  nullable state value. Arrow consts are created after the guard, so narrowing holds.
+- **The day picker wrapped**, stretching Sunday to full width. Grid, not `flex-wrap`.
 
-**Next action:** M1 — data model and the Garmin transplant. See `docs/ROADMAP.md`.
+### Four things fixed during M1a, each of which would have cost an afternoon
+
+- **Worker and beat ran a stale image.** Compose builds a *separate* image per service
+  from the same context unless `image:` is set, so `docker compose build backend` left
+  the other two behind and they died with `ModuleNotFoundError` for a package the
+  backend visibly had. All three now share one image.
+- **Registration silently skipped onboarding.** Adopting the session re-rendered the
+  route guards, and the guard's redirect to `/` beat `navigate('/onboarding')` every
+  time. Fixed with an explicit `onboarding_complete` flag — the router reads data, it
+  does not race a redirect.
+- **`npm run build` failed on TS narrowing** in a hoisted `async function` that captured
+  a nullable state value. Arrow consts are created after the guard, so narrowing holds.
+- **The day picker wrapped**, stretching Sunday to full width in a narrow card. Grid with
+  seven equal columns, not `flex-wrap`.
+
+### Open
+
+- **`DJANGO_SECRET_KEY` signs the JWTs**, and the dev default is 26 chars — under the
+  32-byte minimum for HMAC-SHA256. Fine locally, **forgeable tokens on a public host**.
+  Generate one before hosting: `python -c "import secrets; print(secrets.token_urlsafe(64))"`.
+- **Service-worker registration is still unverified.** This browser blocks it by policy.
+  Artifacts are correct; confirm the real install on a phone over HTTPS.
+- Timezone arrives from browsers as `Asia/Calcutta` (a valid legacy alias for
+  `Asia/Kolkata`). Works correctly; only looks odd.
 
 ## Decision log
 
@@ -314,8 +351,13 @@ on a laptop will not prove it.
 | 2026-08-19 | Segmentation is the foundation, not a metric | The 2.5 km / 1.0 km gap makes every unsegmented number wrong. |
 | 2026-08-19 | Prediction ships as a gated range | Wanted and useful; a point estimate off 6 runs would be fiction. |
 | 2026-08-19 | Journal mandatory, gates run analysis | Highest-value input, and the only one Garmin cannot supply. |
+| 2026-08-19 | Public registration | Being hosted for others, not just Rohit. Adds throttling at M1a, a per-user AI budget at M5, and a hardening pass before launch. |
+| 2026-08-28 | Claude builds, Rohit owns git | Reverses the original split. M4–M6 still worth a conversation before Claude writes it. |
+| 2026-08-28 | `onboarding_complete` as a real field | The router must read a flag, not race a redirect. |
+| 2026-08-19 | JWT, split storage | Access token in JS memory (15 min), refresh token in an httpOnly cookie with rotation + blacklist. `localStorage` was rejected: XSS can read it, and a JWT there cannot be revoked on logout. |
 | 2026-08-19 | Paid Gemini from day one | ₹30–65/month. Free tier trains on health logs; not a trade worth ₹40. |
 | 2026-08-19 | Claude never touches git | Rohit owns staging, commits, history and the remote. |
 | 2026-08-19 | M0 scaffolds the shell only | No apps, no routing beyond one health URL. Pre-creating apps would be Claude writing the backend by the back door. |
 | 2026-08-19 | Frontend deps resolved by npm, not pinned by guess | React 19, TS 7, Vite 6, vite-plugin-pwa 1.3 — real current versions in `package-lock.json`. |
-| 2026-08-19 | Pitch-black theme, rationed accent | `#000` exactly, so OLED pixels are off and the one accent (`#00f5a0`) floats. `run-project`'s dark navy was too close to reuse. Colour carries meaning here; nothing is tinted for decoration. |
+| 2026-08-28 | Monochrome UI, colour only for meaning | `#000` base, greyscale chrome (`--ui #ededf2`), and saturation reserved for information: `--data` cyan for measured values, `--ok` / `--bad` / `--warn` for state. The earlier electric-green accent was effectively Runna's palette. This version is the app's own premise made visual — when a pain flag turns something red it lands, because nothing else competes for attention. |
+| 2026-08-28 | Icon generator lives in the repo | `frontend/scripts/make-icons.py`, pure zlib + struct, no image library. Icons are reproducible rather than one-off binaries. |

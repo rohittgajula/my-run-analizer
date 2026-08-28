@@ -1,19 +1,26 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { api, type Health } from '../api'
+import { api } from '../lib/auth'
+import { useAuth } from '../lib/AuthContext'
 import { installState, promptInstall } from '../lib/install'
+import { GarminCard } from '../components/GarminCard'
+
+type Health = { status: string; db: boolean; redis: boolean }
+
+function Dot({ ok }: { ok: boolean }) {
+  return <span className={ok ? 'dot dot-ok' : 'dot dot-bad'} aria-hidden="true" />
+}
 
 function InstallCard() {
   const [state, setState] = useState(installState)
-
   if (state.kind === 'installed') return null
 
   return (
-    <section className="card card-accent">
+    <section className="card">
       <h2>Install on your phone</h2>
       {state.kind === 'prompt-ready' && (
         <>
-          <p>This app can be installed to your home screen and opened without browser chrome.</p>
+          <p>Add this to your home screen and it opens without browser chrome.</p>
           <button
             className="button"
             onClick={async () => {
@@ -27,34 +34,31 @@ function InstallCard() {
       )}
       {state.kind === 'ios-safari' && (
         <p>
-          Tap the <strong>Share</strong> button, then <strong>Add to Home Screen</strong>.
+          Tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.
         </p>
       )}
       {state.kind === 'ios-other-browser' && (
         <p>
-          iOS only allows installing from Safari. Open this page in Safari, then use{' '}
+          iOS only allows installing from Safari. Open this page there, then{' '}
           <strong>Share → Add to Home Screen</strong>.
         </p>
       )}
       {state.kind === 'unsupported' && (
         <p className="muted">
-          Installing needs Chrome on Android or Safari on iOS. Everything works in this
-          browser regardless.
+          Installing needs Chrome on Android or Safari on iOS. Everything works here
+          regardless.
         </p>
       )}
     </section>
   )
 }
 
-function Dot({ ok }: { ok: boolean }) {
-  return <span className={ok ? 'dot dot-ok' : 'dot dot-bad'} aria-hidden="true" />
-}
-
 export default function Home() {
-  const { data, error, isPending } = useQuery({
+  const { athlete } = useAuth()
+  const { data } = useQuery({
     queryKey: ['health'],
     queryFn: () => api<Health>('/health/'),
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
     retry: false,
   })
 
@@ -62,36 +66,28 @@ export default function Home() {
     <main className="page">
       <header className="header">
         <h1>
-          Run Analize<span className="mark">r</span>
+          Hello, {athlete?.display_name}
+          <span className="mark">.</span>
         </h1>
         <p className="muted">
-          Race-date-driven coaching on Garmin data. Milestone&nbsp;0 — scaffold.
+          {athlete?.training_days_per_week} training days a week · {athlete?.timezone}
         </p>
       </header>
 
-      <section className="card">
-        <h2>Backend</h2>
-        {isPending && <p className="muted">Checking…</p>}
-        {error && <p className="bad">Unreachable — {String(error.message)}</p>}
-        {data && (
-          <ul className="checks">
-            <li>
-              <Dot ok={data.db} /> PostgreSQL
-            </li>
-            <li>
-              <Dot ok={data.redis} /> Redis
-            </li>
-          </ul>
-        )}
-      </section>
+      <GarminCard />
 
       <InstallCard />
 
       <section className="card">
-        <h2>Next</h2>
-        <p className="muted">
-          M1 — data model and the Garmin transplant. See <code>docs/ROADMAP.md</code>.
-        </p>
+        <h2>System</h2>
+        <ul className="checks">
+          <li>
+            <Dot ok={Boolean(data?.db)} /> Database
+          </li>
+          <li>
+            <Dot ok={Boolean(data?.redis)} /> Queue
+          </li>
+        </ul>
       </section>
     </main>
   )

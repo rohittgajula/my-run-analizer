@@ -16,6 +16,8 @@ venv/
 node_modules/
 /frontend/dist/
 /frontend/.vite/
+# tsc -b incremental cache — machine-specific, churns on every build
+*.tsbuildinfo
 
 # Secrets — never commit
 .env

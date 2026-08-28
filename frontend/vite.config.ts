@@ -46,6 +46,10 @@ export default defineConfig({
     proxy: {
       '/api': { target: process.env.VITE_PROXY_TARGET ?? 'http://backend:8000', changeOrigin: true },
     },
+    // The HMR client connects from the browser on the HOST, so it must be told the
+    // published port explicitly — inside the container Vite only knows about its own
+    // bind address, and the websocket fails silently, leaving you reloading by hand.
+    hmr: { clientPort: 5173 },
     watch: {
       // Vite's native watcher misses newly created files under a bind mount, and the
       // symptom is a new component that simply never appears. This cost run-project

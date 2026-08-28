@@ -1,24 +1,33 @@
-/* Pitch black. Not "dark navy" — #000 exactly, so on an OLED phone those pixels are
-   genuinely off and the accent appears to float. That only works if the accent is
-   the ONLY saturated thing on screen, so colour here is rationed: green means good,
-   and nothing else is coloured just for decoration. */
+/* Pitch black, monochrome UI, colour reserved for meaning.
+ *
+ * The rule: interface chrome is greyscale. A colour appears ONLY when it carries
+ * information — good, bad, caution, or a data series. Nothing is tinted to look
+ * nice. That is the app's own premise made visual: when a pain flag turns something
+ * red it lands hard, because nothing else on screen competes for the attention.
+ *
+ * Background is #000 exactly, so on an OLED phone those pixels are genuinely off.
+ */
 
 :root {
   --bg: #000000;
   --surface: #0a0a0c;
   --surface-hi: #101015;
   --border: #1c1c22;
-  --border-hi: #2a2a33;
+  --border-hi: #2b2b34;
 
   --text: #f5f5f7;
   --muted: #6e6e7a;
 
-  --accent: #00f5a0;
-  --accent-dim: #00b878;
-  --accent-glow: rgba(0, 245, 160, 0.14);
+  /* Interactive chrome — buttons, selected states, focus. Greyscale on purpose. */
+  --ui: #ededf2;
+  --ui-dim: #5a5a66;
+  --ui-glow: rgba(255, 255, 255, 0.07);
 
-  --bad: #ff4d6d;
-  --warn: #ffb800;
+  /* Meaning. These are the only saturated values in the system. */
+  --data: #38e1ff;   /* a measured value: charts, emphasised numbers */
+  --ok: #3ddc97;     /* good, healthy, connected */
+  --bad: #ff4d6d;    /* failed, pain, unsafe */
+  --warn: #ffb800;   /* caution, low confidence, estimate */
 
   color-scheme: dark;
 }
@@ -47,7 +56,7 @@ body::before {
   position: fixed;
   inset: -30vh 0 auto 0;
   height: 60vh;
-  background: radial-gradient(60% 60% at 50% 50%, var(--accent-glow), transparent 70%);
+  background: radial-gradient(60% 60% at 50% 50%, rgba(56, 225, 255, 0.06), transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -70,7 +79,7 @@ h1 {
 }
 
 /* The accent appears in exactly one glyph in the wordmark. */
-h1 .mark { color: var(--accent); }
+h1 .mark { color: var(--data); }
 
 h2 {
   font-size: 0.7rem;
@@ -96,7 +105,7 @@ h2 {
   border-color: var(--border-hi);
   background:
     linear-gradient(var(--surface), var(--surface)) padding-box,
-    linear-gradient(160deg, var(--accent-dim), transparent 45%) border-box;
+    linear-gradient(160deg, var(--ui-dim), transparent 45%) border-box;
   border: 1px solid transparent;
 }
 
@@ -113,22 +122,22 @@ h2 {
   flex: none;
 }
 /* The glow is the signal, not the dot — at 8px a colour alone is easy to miss. */
-.dot-ok  { background: var(--accent); box-shadow: 0 0 0 3px rgba(0, 245, 160, 0.15); }
+.dot-ok  { background: var(--ok);  box-shadow: 0 0 0 3px rgba(61, 220, 151, 0.15); }
 .dot-bad { background: var(--bad);    box-shadow: 0 0 0 3px rgba(255, 77, 109, 0.15); }
 
 .button {
   font: inherit;
   font-weight: 600;
-  color: #00110a;
-  background: var(--accent);
+  color: #08080a;
+  background: var(--ui);
   border: 0;
   border-radius: 0.55rem;
   padding: 0.65rem 1.2rem;
   cursor: pointer;
   transition: filter 0.15s ease, box-shadow 0.15s ease;
 }
-.button:hover { filter: brightness(1.1); box-shadow: 0 0 24px rgba(0, 245, 160, 0.25); }
-.button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.button:hover { filter: brightness(1.06); box-shadow: 0 0 24px rgba(255, 255, 255, 0.10); }
+.button:focus-visible { outline: 2px solid var(--ui); outline-offset: 3px; }
 
 code {
   background: var(--surface-hi);
@@ -140,3 +149,113 @@ code {
 }
 
 strong { color: var(--text); font-weight: 600; }
+
+/* --- nav ------------------------------------------------------------------ */
+
+.nav {
+  position: relative;
+  z-index: 2;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+}
+.nav-inner {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.nav-brand { font-weight: 650; color: var(--text); text-decoration: none; letter-spacing: -0.01em; }
+.nav-links { display: flex; align-items: center; gap: 1.1rem; }
+.nav-links a, .linkish {
+  color: var(--muted);
+  text-decoration: none;
+  font: inherit;
+  font-size: 0.92rem;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.nav-links a:hover, .linkish:hover { color: var(--text); }
+
+a { color: var(--text); text-underline-offset: 3px; }
+
+/* --- layout --------------------------------------------------------------- */
+
+.page-narrow { max-width: 26rem; }
+.centered { text-align: center; }
+.booting { min-height: 60vh; }
+
+.row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; }
+.row > .field { flex: 1 1 8rem; }
+.row-end { justify-content: flex-end; align-items: center; margin-top: 1.25rem; }
+
+/* --- forms ---------------------------------------------------------------- */
+
+.field { display: block; margin-bottom: 1rem; }
+.field:last-child { margin-bottom: 0; }
+
+.field-label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.02em;
+}
+
+input, select {
+  width: 100%;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border-hi);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  /* 16px minimum, or iOS Safari zooms the whole page on focus. */
+  font-size: 16px;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--ui-dim);
+  box-shadow: 0 0 0 3px var(--ui-glow);
+}
+input[readonly] { color: var(--muted); background: var(--surface-hi); }
+
+.field-hint { display: block; font-size: 0.8rem; color: var(--muted); margin-top: 0.4rem; }
+.field-error { display: block; font-size: 0.8rem; color: var(--bad); margin-top: 0.4rem; }
+
+.button-block { width: 100%; margin-top: 0.5rem; }
+.button:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+
+.ok-note { color: var(--ok); font-size: 0.85rem; margin-right: 0.25rem; }
+
+/* --- day picker ----------------------------------------------------------- */
+
+/* Grid, not flex-wrap: seven equal columns always sit on one row. Wrapping let
+   the last day stretch to full width whenever the card got narrow. */
+.daypicker-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.35rem; }
+
+.day {
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border-hi);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.1rem;
+  cursor: pointer;
+  min-width: 0;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+.day:hover { color: var(--text); }
+.day-on {
+  color: #08080a;
+  background: var(--ui);
+  border-color: var(--ui);
+}
+.day:focus-visible { outline: 2px solid var(--ui); outline-offset: 2px; }
