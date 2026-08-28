@@ -4,6 +4,40 @@ import { Card, Stat } from '../components/Stat'
 
 type Race = { id: number; name: string; date: string; distance_km: number; is_target: boolean }
 type PlanToday = { date: string; mode: string; weeks_out: number | null; days_to_race: number | null; note: string; race: Race | null }
+type PlanSession = {
+  date: string
+  kind: string
+  run_minutes: number
+  walk_minutes: number
+  total_minutes: number
+  target_run_m: number
+  purpose: string
+  effort: string
+}
+type PlanWeek = {
+  index: number
+  weeks_out: number
+  phase: string
+  start_date: string
+  planned_run_km: number
+  is_cutback: boolean
+  sessions: PlanSession[]
+}
+type PlanData = {
+  runway: string
+  weeks_available: number
+  peak_run_km: number
+  ideal_peak_run_km: number
+  reached_ideal_peak: boolean
+  warnings: string[]
+  weeks: PlanWeek[]
+}
+type TodaySession = {
+  mode: string
+  session: PlanSession | null
+  adjustment: { severity: string; changed: boolean; dropped: boolean; reasons: string[] } | null
+}
+
 type Prediction = {
   race: Race
   mode: string
@@ -41,6 +75,16 @@ export default function Plan() {
     queryKey: ['predictions'],
     queryFn: () => api<Prediction[]>('/plan/predictions/'),
   })
+  const weeks = useQuery({
+    queryKey: ['plan-weeks'],
+    queryFn: () => api<PlanData>('/plan/weeks/'),
+    retry: false,
+  })
+  const session = useQuery({
+    queryKey: ['plan-session'],
+    queryFn: () => api<TodaySession>('/plan/session/'),
+    retry: false,
+  })
 
   return (
     <main className="page">
@@ -49,6 +93,39 @@ export default function Plan() {
           Plan<span className="mark">.</span>
         </h1>
       </header>
+
+      {session.data?.session && (
+        <Card
+          title="Today's session"
+          description={session.data.session.purpose}
+        >
+          <div className="grid grid-4 tight">
+            <Stat label="Session" value={session.data.session.kind.replace('_', '/').toLowerCase()} tone="data" />
+            <Stat label="Running" value={session.data.session.run_minutes} unit="min" tone="data" />
+            <Stat label="Walking" value={session.data.session.walk_minutes} unit="min" />
+            <Stat label="Target" value={session.data.session.target_run_m} unit="m run" />
+          </div>
+          <p className="card-foot muted">{session.data.session.effort}</p>
+
+          {/* Readiness notes sit OUTSIDE any collapsible or slide: on a critical day
+              this says do not train hard, and that must not be behind a control
+              nobody clicks. */}
+          {session.data.adjustment?.changed && (
+            <div className={`notice notice-${session.data.adjustment.severity}`}>
+              <strong>
+                {session.data.adjustment.dropped
+                  ? 'Session dropped today'
+                  : 'Eased from the planned session'}
+              </strong>
+              <ul>
+                {session.data.adjustment.reasons.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Card>
+      )}
 
       {today.data && (
         <Card title="Today" description={MODE_MEANING[today.data.mode]}>
@@ -84,6 +161,44 @@ export default function Plan() {
           <p className="muted">No races yet.</p>
         )}
       </Card>
+
+      {weeks.data && (
+        <Card
+          title="The build"
+          description={`${weeks.data.weeks_available} weeks, ${weeks.data.runway.toLowerCase()} runway. Volume is RUNNING distance — ramping the logged total when most of it is walking prescribes a load you are not carrying.`}
+        >
+          {weeks.data.warnings.map((warning) => (
+            <p className="notice notice-caution" key={warning}>{warning}</p>
+          ))}
+
+          <div className="table-scroll">
+            <table className="blocks weeks">
+              <thead>
+                <tr>
+                  <th>Wk</th><th>Phase</th><th>Run km</th><th>Sessions</th><th>Longest</th>
+                </tr>
+              </thead>
+              <tbody>
+                {weeks.data.weeks.map((week) => {
+                  const longest = Math.max(0, ...week.sessions.map((s) => s.target_run_m))
+                  return (
+                    <tr key={week.index} className={week.is_cutback ? '' : 'is-run'}>
+                      <td className="muted">{week.index + 1}</td>
+                      <td>{week.phase.toLowerCase()}</td>
+                      <td className={week.is_cutback ? 'muted' : 'data'}>
+                        {week.planned_run_km.toFixed(1)}
+                        {week.is_cutback && <span className="unit">cutback</span>}
+                      </td>
+                      <td>{week.sessions.length}</td>
+                      <td>{longest ? `${longest} m` : '—'}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {predictions.data?.map((prediction) => (
         <Card

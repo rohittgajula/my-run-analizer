@@ -473,3 +473,25 @@ input[readonly] { color: var(--muted); background: var(--surface-hi); }
   .sidebar-foot { display: none; }
   .shell .page { padding: 1.25rem 1rem 3rem; }
 }
+
+/* --- readiness notice ------------------------------------------------------ */
+
+/* Never inside a slider, accordion or anything else that can hide it: on a
+   critical day this says do not train hard. */
+.notice {
+  margin: 1rem 0 0;
+  padding: 0.8rem 0.95rem;
+  border-radius: 0.55rem;
+  border: 1px solid var(--border-hi);
+  background: var(--surface-hi);
+  font-size: 0.87rem;
+  line-height: 1.5;
+}
+.notice ul { margin: 0.5rem 0 0; padding-left: 1.1rem; color: var(--muted); }
+.notice li { margin-bottom: 0.25rem; }
+.notice-caution { border-color: var(--warn); }
+.notice-caution strong { color: var(--warn); }
+.notice-critical { border-color: var(--bad); }
+.notice-critical strong { color: var(--bad); }
+
+.weeks .unit { margin-left: 0.4rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }

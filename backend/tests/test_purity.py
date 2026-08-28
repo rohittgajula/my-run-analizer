@@ -23,6 +23,8 @@ PURE_MODULES = [
     "planning",
     "planning.calendar",
     "planning.prediction",
+    "planning.generator",
+    "planning.readiness",
 ]
 
 

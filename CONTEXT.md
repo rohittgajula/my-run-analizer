@@ -4,7 +4,7 @@
 > session reads. If something here contradicts the code, the code wins and this file is
 > stale — say so.
 
-Last updated: **2026-08-28** · Status: **M3a + M3b complete, plus wellness ingestion and the dashboard. M3c (plan generator) next.**
+Last updated: **2026-08-28** · Status: **M3 complete — calendar, prediction, generator and readiness. M4 (the AI layer) next.**
 
 ---
 
@@ -270,8 +270,14 @@ the four model IDs there** — nothing reads a model name from code.
 
 ## Current state
 
-**M0–M2, M3a, M3b done.** Accounts, Garmin ingestion, the metrics engine, the race
-calendar and finish prediction all work against real data. **109 tests pass.**
+**M0–M3 done.** Accounts, Garmin ingestion, the metrics engine, the race
+calendar, finish prediction, the plan generator and the readiness layer all work
+against real data. **207 tests pass.**
+
+**The generated plan**: 16 weeks to Pune, STANDARD runway, baseline 5.3 km of running
+a week rising to a **12.7 km peak** — against an ideal of 22 km for a 10K. The plan says
+so rather than inventing a peak it cannot safely reach: the 10% weekly cap outranks the
+target, always.
 
 **28 days of Garmin wellness ingested**: sleep, HRV, training readiness, acute load,
 resting HR, stress, Body Battery, respiration, VO₂max. Shown on Today and Health as
