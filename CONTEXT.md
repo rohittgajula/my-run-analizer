@@ -4,7 +4,7 @@
 > session reads. If something here contradicts the code, the code wins and this file is
 > stale — say so.
 
-Last updated: **2026-08-28** · Status: **M2 complete. Segmentation running over real data.**
+Last updated: **2026-08-28** · Status: **M3a + M3b complete. Race calendar and prediction resolve over real data. M3c (plan generator) next.**
 
 ---
 
@@ -270,8 +270,21 @@ the four model IDs there** — nothing reads a model name from code.
 
 ## Current state
 
-**M0–M2 done.** Accounts, Garmin ingestion, and the metrics engine all work against
-real data. **66 tests pass.** Pushed to `main`.
+**M0–M2, M3a, M3b done.** Accounts, Garmin ingestion, the metrics engine, the race
+calendar and finish prediction all work against real data. **109 tests pass.**
+
+Races stored: **Bajaj Pune 10K, 13 Dec 2026 (target)** and **January 10K, 3 Jan 2027**.
+Today resolves to `build`, 15 weeks out — a STANDARD runway for a 10K.
+
+The Dec/Jan calendar resolves correctly, which was the whole point of M3a:
+`build` → race → 7 days `recovery` → `maintenance` (1.9 weeks to the next race, under
+`MIN_BUILD_WEEKS`, so it holds rather than rebuilding) → 3 days `mini_taper` → race →
+`recovery`. No build day falls inside a recovery window, and no peak week lands after
+a race — both are property-tested over the full range.
+
+**Prediction currently returns INSUFFICIENT_DATA**, and that is the system working:
+7 segmented runs over 2.1 weeks against a gate of 8 over 3. One more run and about a
+week of history opens it.
 
 **18 real activities imported**, back to 2 July: 8 runs, 5 walks, 4 strength sessions,
 1 ride. 12 segmented; the strength and cycling sessions are refused rather than
@@ -283,19 +296,28 @@ The 17 Aug session, which started this project:
 
 | | |
 |---|---|
-| Garmin says | 2.65 km @ 8:27/km, avg cadence 116 |
-| Actually | **976 m run** in 5 blocks, 1522 m walked (37%) |
-| Real running pace | **8:27/km blended → 7:05/km over run blocks only** |
+| Garmin says | 2651 m @ **10:29/km**, avg cadence 116 |
+| Actually | **976 m run** in 5 blocks, 1522 m walked (37%), 120 s stopped |
+| Real running pace | **8:27/km** (walking 11:21/km, blended 9:43/km) |
 | Longest unbroken block | 4:51 |
 
-The blended average was making him look slower than he is *and* hiding that he ran a
-third of the time. Avg cadence 116 is below the 140 running threshold precisely because
-it averages running and walking together.
+Garmin's 10:29/km is two minutes per km slower than his actual running pace, because it
+averages running, walking and standing still. Avg cadence 116 is below the 140 running
+threshold for the same reason.
 
-**A real trend is already visible** in longest continuous block: 4:51 (17 Aug) → 10:12
-(19 Aug) → 13:54 (20 Aug) → 8:00 (24 Aug). That is the single best progress signal for
-a beginner and it is climbing. 21 Aug breaks the pattern — 6 blocks, longest 3:00 —
-which looks like a different session type rather than a regression.
+**The clearest finding in the data is a deliberate trade.** From 18 Aug the athlete
+slowed from ~8:20/km to ~10:20/km, and the longest continuous block went 4:48 → 10:12 →
+13:54. Running easier let him run roughly three times longer. That is textbook-correct
+beginner behaviour and the single best thing in the history.
+
+It also broke the first version of the predictor: a trend fit on pace read the
+slowdown as decline and projected him slower still, compounding into a **four-hour
+10K** — slower than walking it. Pace is now *estimated* from the recent median rather
+than extrapolated, and two bounds are enforced: a finish can never be slower than
+walking the distance, nor faster than the best pace ever run. Both are tested.
+
+21 Aug breaks the pattern — 6 blocks, longest 3:00, but 1327 m of running — which reads
+as an interval session rather than a regression.
 
 ### Deviations from `run-project` worth knowing### Deviations from `run-project` worth knowing
 

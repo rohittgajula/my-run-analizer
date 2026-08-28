@@ -20,6 +20,9 @@ PURE_MODULES = [
     "analysis.running_truth",
     "analysis.heart_rate",
     "analysis.load",
+    "planning",
+    "planning.calendar",
+    "planning.prediction",
 ]
 
 
