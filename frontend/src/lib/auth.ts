@@ -126,3 +126,52 @@ export type Athlete = {
 }
 
 export type Session = { user: User; athlete: Athlete; access?: string }
+
+
+export type ActivityMetrics = {
+  run_distance_m: number
+  walk_distance_m: number
+  run_fraction: number
+  run_duration_s: number
+  walk_duration_s: number
+  run_block_count: number
+  longest_run_m: number
+  longest_run_s: number
+  run_pace_s_per_km: number | null
+  walk_pace_s_per_km: number | null
+  blended_pace_s_per_km: number | null
+  avg_run_cadence_spm: number | null
+  avg_run_hr: number | null
+  hr_drift_percent: number | null
+  custom_load: number | null
+}
+
+export type Segment = {
+  index: number
+  kind: 'run' | 'walk' | 'stop'
+  start_offset_s: number
+  duration_s: number
+  distance_m: number
+  avg_pace_s_per_km: number | null
+  avg_cadence_spm: number | null
+  hr_avg: number | null
+  hr_max: number | null
+  hr_recovery_60s: number | null
+  hr_overshoot_bpm: number | null
+}
+
+export type Activity = {
+  id: number
+  local_date: string
+  sport: string
+  started_at: string
+  total_distance_m: number
+  total_timer_s: number
+  total_elapsed_s: number
+  avg_hr: number | null
+  max_hr: number | null
+  avg_cadence_spm: number | null
+  segmentation_version: number | null
+  metrics: ActivityMetrics | null
+  segments?: Segment[]
+}

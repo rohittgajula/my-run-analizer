@@ -1,6 +1,8 @@
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { AuthProvider, useAuth } from './lib/AuthContext'
+import Activities from './pages/Activities'
+import ActivityDetail from './pages/ActivityDetail'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Onboarding from './pages/Onboarding'
@@ -46,6 +48,7 @@ function Nav() {
           Run Analize<span className="mark">r</span>
         </Link>
         <div className="nav-links">
+          <Link to="/activities">Activities</Link>
           <Link to="/settings">Settings</Link>
           <button className="linkish" onClick={logout}>
             Sign out
@@ -65,6 +68,8 @@ export default function App() {
           <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
           <Route path="/register" element={<GuestOnly><Register /></GuestOnly>} />
           <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
+          <Route path="/activities" element={<RequireAuth><Activities /></RequireAuth>} />
+          <Route path="/activities/:id" element={<RequireAuth><ActivityDetail /></RequireAuth>} />
           <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
           <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
           <Route path="*" element={<Navigate to="/" replace />} />

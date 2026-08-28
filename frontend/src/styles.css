@@ -259,3 +259,90 @@ input[readonly] { color: var(--muted); background: var(--surface-hi); }
   border-color: var(--ui);
 }
 .day:focus-visible { outline: 2px solid var(--ui); outline-offset: 2px; }
+
+/* --- the run/walk truth ---------------------------------------------------- */
+
+/* The primary number on any activity is what was RUN, not what was logged.
+   Leading with the logged total would reproduce the exact impression this
+   project exists to correct. */
+.truth-primary { color: var(--data); font-weight: 650; }
+.truth-headline { font-size: 1.15rem; margin-bottom: 0.35rem; }
+.truth-sep { color: var(--border-hi); margin: 0 0.5rem; }
+.truth-aside { color: var(--muted); font-size: 0.87rem; margin: 0 0 1rem; }
+.truth-note {
+  color: var(--muted);
+  font-size: 0.84rem;
+  margin: 1rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.truth-bar {
+  height: 0.4rem;
+  border-radius: 0.2rem;
+  background: var(--border);
+  overflow: hidden;
+  margin-bottom: 0.9rem;
+}
+.truth-run { display: block; height: 100%; background: var(--data); }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 0.9rem 1rem;
+  margin: 0;
+}
+.stats dt { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+.stats dd { margin: 0.2rem 0 0; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.stats .unit { font-size: 0.75rem; color: var(--muted); margin-left: 0.15rem; }
+.data { color: var(--data); }
+
+/* --- activity list --------------------------------------------------------- */
+
+.activity-list { list-style: none; margin: 0; padding: 0; }
+
+.activity-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  margin-bottom: 0.5rem;
+  text-decoration: none;
+  color: var(--text);
+  background: var(--surface);
+}
+.activity-row:hover { border-color: var(--border-hi); }
+.activity-when { display: flex; flex-direction: column; gap: 0.1rem; flex: none; }
+.activity-date { font-weight: 600; font-size: 0.92rem; }
+.activity-sport { font-size: 0.76rem; }
+.activity-figures { text-align: right; font-variant-numeric: tabular-nums; }
+.activity-secondary { display: block; font-size: 0.78rem; }
+
+.back { display: inline-block; text-decoration: none; margin-bottom: 0.75rem; font-size: 0.88rem; }
+
+/* --- block table ----------------------------------------------------------- */
+
+.table-scroll { overflow-x: auto; margin: 0 -0.35rem; padding: 0 0.35rem; }
+.blocks {
+  width: 100%;
+  min-width: 26rem;   /* below this the columns collide instead of scrolling */
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.blocks th, .blocks td { white-space: nowrap; padding-right: 1rem; }
+.blocks th {
+  text-align: left;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+}
+.blocks td { padding: 0.45rem 0.6rem 0.45rem 0; border-top: 1px solid var(--border); font-size: 0.9rem; }
+.blocks td:first-child, .blocks th:first-child { padding-right: 0.8rem; }
+.blocks tr.is-run td { color: var(--text); }
+.blocks tr:not(.is-run) td { color: var(--muted); }

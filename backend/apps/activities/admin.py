@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Activity, ActivityRecord
+from .models import Activity, ActivityMetrics, ActivityRecord, Segment
 
 
 class ActivityRecordInline(admin.TabularInline):
@@ -33,3 +33,17 @@ class ActivityAdmin(admin.ModelAdmin):
     @admin.display(description="records")
     def record_count(self, obj):
         return obj.records.count()
+
+
+@admin.register(Segment)
+class SegmentAdmin(admin.ModelAdmin):
+    list_display = ("activity", "index", "kind", "duration_s", "distance_m",
+                    "avg_cadence_spm", "hr_recovery_60s")
+    list_filter = ("kind",)
+
+
+@admin.register(ActivityMetrics)
+class ActivityMetricsAdmin(admin.ModelAdmin):
+    list_display = ("activity", "run_distance_m", "walk_distance_m", "run_fraction",
+                    "run_block_count", "longest_run_s", "algorithm_version")
+    list_filter = ("algorithm_version",)

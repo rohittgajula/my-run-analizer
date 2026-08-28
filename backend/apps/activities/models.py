@@ -112,3 +112,100 @@ class ActivityRecord(models.Model):
 
     def __str__(self):
         return f"{self.activity_id}@{self.offset_s:.0f}s"
+
+
+class Segment(models.Model):
+    """A contiguous run / walk / stop block, derived from cadence.
+
+    This is the entity Garmin does not give you: its lap data hides that a "2.65 km
+    run" was five short run blocks with walking in between.
+    """
+
+    class Kind(models.TextChoices):
+        RUN = "run", "Run"
+        WALK = "walk", "Walk"
+        STOP = "stop", "Stop"
+
+    activity = models.ForeignKey(
+        Activity, on_delete=models.CASCADE, related_name="segments"
+    )
+    index = models.PositiveSmallIntegerField()
+    kind = models.CharField(max_length=8, choices=Kind.choices, db_index=True)
+
+    start_offset_s = models.FloatField()
+    duration_s = models.FloatField()
+    distance_m = models.FloatField()
+
+    avg_pace_s_per_km = models.FloatField(null=True, blank=True)
+    avg_cadence_spm = models.FloatField(null=True, blank=True)
+
+    hr_start = models.PositiveSmallIntegerField(null=True, blank=True)
+    hr_end = models.PositiveSmallIntegerField(null=True, blank=True)
+    hr_avg = models.PositiveSmallIntegerField(null=True, blank=True)
+    hr_max = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    # Measured from the HR peak, not the block boundary — cardiac lag keeps HR
+    # climbing 15-25s after stopping. Should rise over months as fitness improves.
+    hr_recovery_60s = models.SmallIntegerField(null=True, blank=True)
+    # How much further HR rose AFTER stopping. Large means that block outran the
+    # athlete's aerobic system. Should fall towards zero as base fitness improves.
+    hr_overshoot_bpm = models.SmallIntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["activity", "index"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["activity", "index"], name="uniq_activity_segment_index"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.kind} {self.duration_s:.0f}s {self.distance_m:.0f}m"
+
+
+class ActivityMetrics(models.Model):
+    """Derived numbers for one activity. One row per activity, rebuilt on demand.
+
+    Separate from Activity so that re-deriving is a delete-and-recreate rather than a
+    partial update, and so the ingested facts stay clearly distinct from the computed
+    ones — a distinction that matters the first time a metric looks wrong.
+    """
+
+    activity = models.OneToOneField(
+        Activity, on_delete=models.CASCADE, related_name="metrics"
+    )
+
+    run_distance_m = models.FloatField()
+    walk_distance_m = models.FloatField()
+    run_fraction = models.FloatField()
+
+    run_duration_s = models.FloatField()
+    walk_duration_s = models.FloatField()
+    stop_duration_s = models.FloatField()
+
+    run_block_count = models.PositiveSmallIntegerField()
+    # The single most useful progress signal a beginner has.
+    longest_run_m = models.FloatField()
+    longest_run_s = models.FloatField()
+
+    # Over RUN blocks only. The athlete's real running pace, as opposed to the
+    # blended figure the watch shows, which is slower than either component.
+    run_pace_s_per_km = models.FloatField(null=True, blank=True)
+    walk_pace_s_per_km = models.FloatField(null=True, blank=True)
+    blended_pace_s_per_km = models.FloatField(null=True, blank=True)
+
+    avg_run_cadence_spm = models.FloatField(null=True, blank=True)
+    avg_run_hr = models.PositiveSmallIntegerField(null=True, blank=True)
+    hr_drift_percent = models.FloatField(null=True, blank=True)
+
+    custom_load = models.FloatField(null=True, blank=True)
+    load_formula_version = models.CharField(max_length=8, blank=True)
+
+    algorithm_version = models.IntegerField()
+    calculated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "activity metrics"
+
+    def __str__(self):
+        return f"{self.run_distance_m:.0f}m run / {self.walk_distance_m:.0f}m walk"

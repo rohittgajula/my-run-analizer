@@ -4,7 +4,7 @@
 > session reads. If something here contradicts the code, the code wins and this file is
 > stale — say so.
 
-Last updated: **2026-08-28** · Status: **M1b complete. Garmin connect is built but not yet used with real credentials.**
+Last updated: **2026-08-28** · Status: **M2 complete. Segmentation running over real data.**
 
 ---
 
@@ -270,23 +270,34 @@ the four model IDs there** — nothing reads a model name from code.
 
 ## Current state
 
-**M1a and M1b done.** Register → onboarding → dashboard → settings → logout works end to
-end. Garmin connect / sync / disconnect endpoints and UI are built and fail cleanly
-(400, never 500) with no token stored. **37 tests pass.**
+**M0–M2 done.** Accounts, Garmin ingestion, and the metrics engine all work against
+real data. **66 tests pass.** Pushed to `main`.
 
-Auth is JWT with split storage: **access token in a JS module variable** (15 min),
-**refresh token in an httpOnly cookie** (7 days, `SameSite=Lax`, `path=/api/auth/`,
-rotated on use, blacklisted on logout). Verified in a live browser: `localStorage`
-empty, `document.cookie` empty, session survives a full reload.
+**18 real activities imported**, back to 2 July: 8 runs, 5 walks, 4 strength sessions,
+1 ride. 12 segmented; the strength and cycling sessions are refused rather than
+mis-segmented.
 
-Models: `Athlete` (+ `OwnedByAthlete`, `AthleteScopedMixin`), `RawFitFile`, `Activity`,
-`ActivityRecord`. `Segment` belongs to M2, with the algorithm that produces it.
+### What segmentation found
 
-**Not yet done:** nobody has connected a real Garmin account. That is Rohit's to do —
-the flow asks for the Connect password once, exchanges it for an OAuth token, and never
-stores or logs it, but Claude does not enter credentials.
+The 17 Aug session, which started this project:
 
-### Deviations from `run-project` worth knowing
+| | |
+|---|---|
+| Garmin says | 2.65 km @ 8:27/km, avg cadence 116 |
+| Actually | **976 m run** in 5 blocks, 1522 m walked (37%) |
+| Real running pace | **8:27/km blended → 7:05/km over run blocks only** |
+| Longest unbroken block | 4:51 |
+
+The blended average was making him look slower than he is *and* hiding that he ran a
+third of the time. Avg cadence 116 is below the 140 running threshold precisely because
+it averages running and walking together.
+
+**A real trend is already visible** in longest continuous block: 4:51 (17 Aug) → 10:12
+(19 Aug) → 13:54 (20 Aug) → 8:00 (24 Aug). That is the single best progress signal for
+a beginner and it is climbing. 21 Aug breaks the pattern — 6 blocks, longest 3:00 —
+which looks like a different session type rather than a regression.
+
+### Deviations from `run-project` worth knowing### Deviations from `run-project` worth knowing
 
 - **The FIT parser produces its own `ParsedRecord`** rather than importing
   `analysis.segmentation.Sample` and smuggling extra fields through `__dict__`. The
@@ -296,6 +307,12 @@ stores or logs it, but Claude does not enter credentials.
   tells you which algorithm produced any given number.
 - **`available_days` holds availability only**, not day types. The generator owns what
   each day is for.
+- **Segmentation refuses rather than guesses.** `check_segmentable` rejects non-foot
+  sports and activities below 70% cadence coverage. `run-project` would classify a
+  whole cycling session as "stop" and report it as a real measurement.
+- **Speed integration uses real time deltas**, not an assumed 1 Hz. Garmin drops to
+  smart recording on long activities, where assuming one sample per second understates
+  distance.
 
 ### Bugs caught during M1a/M1b, each of which would have cost an afternoon
 
