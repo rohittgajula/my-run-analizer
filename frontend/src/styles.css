@@ -602,3 +602,108 @@ input[readonly] { color: var(--muted); background: var(--surface-hi); }
 .plain { margin: 0; padding-left: 1.1rem; line-height: 1.6; }
 .plain li { margin-bottom: 0.4rem; }
 .plain li:last-child { margin-bottom: 0; }
+
+/* --- filters and paging ---------------------------------------------------- */
+
+.filters { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+
+.filter {
+  font: inherit;
+  font-size: 0.83rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border-hi);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+}
+.filter:hover:not(:disabled) { color: var(--text); }
+.filter:disabled { opacity: 0.4; cursor: not-allowed; }
+.filter-on { color: #08080a; background: var(--ui); border-color: var(--ui); font-weight: 600; }
+.filter-count { opacity: 0.6; margin-left: 0.3rem; font-variant-numeric: tabular-nums; }
+
+.pager { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.25rem; }
+
+/* --- calendar -------------------------------------------------------------- */
+
+.month-nav { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+
+.cal {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  overflow: hidden;
+}
+
+.cal-head {
+  background: var(--surface);
+  padding: 0.5rem 0.4rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-align: center;
+}
+
+.cal-cell {
+  background: var(--bg);
+  min-height: 5.5rem;
+  padding: 0.35rem 0.4rem;
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  position: relative;
+}
+.cal-blank { background: var(--surface); }
+.cal-today { box-shadow: inset 0 0 0 1px var(--ui); }
+
+.cal-top { display: flex; justify-content: space-between; align-items: baseline; }
+.cal-date { font-weight: 600; font-variant-numeric: tabular-nums; }
+.cal-readiness { font-size: 0.66rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cal-readiness.warn { color: var(--warn); }
+.cal-readiness.bad { color: var(--bad); }
+
+.cal-race {
+  align-self: flex-start;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #08080a;
+  background: var(--data);
+  border-radius: 0.25rem;
+  padding: 0.05rem 0.3rem;
+}
+
+.cal-planned { color: var(--muted); font-size: 0.7rem; line-height: 1.3; }
+.cal-actual { display: block; text-decoration: none; color: var(--text); font-size: 0.72rem; line-height: 1.35; }
+.cal-actual:hover { text-decoration: underline; }
+.cal-note { position: absolute; bottom: 0.25rem; right: 0.4rem; color: var(--muted); }
+
+/* Mode is carried by a left edge rather than a fill: filling the cell would fight
+   the data inside it, which is the part worth reading. */
+.mode-build { border-left: 2px solid var(--ui-dim); }
+.mode-race { border-left: 2px solid var(--data); }
+.mode-recovery { border-left: 2px solid var(--ok); }
+.mode-mini_taper { border-left: 2px solid var(--warn); }
+.mode-maintenance { border-left: 2px solid var(--border-hi); }
+.mode-off_season { border-left: 2px solid transparent; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 0.9rem; font-size: 0.75rem; color: var(--muted); }
+.legend-item { padding-left: 0.5rem; }
+
+/* --- race editing ---------------------------------------------------------- */
+
+.race-meta { display: flex; align-items: baseline; gap: 0.8rem; flex-wrap: wrap; }
+.linkish.bad { color: var(--bad); }
+.race-form { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.checkline { display: flex; align-items: flex-start; gap: 0.55rem; margin: 0.5rem 0 0; font-size: 0.9rem; }
+.checkline input { width: auto; margin-top: 0.15rem; }
+
+@media (max-width: 46rem) {
+  .cal-cell { min-height: 4rem; font-size: 0.68rem; padding: 0.25rem 0.3rem; }
+  .cal-planned, .cal-actual { font-size: 0.62rem; }
+}

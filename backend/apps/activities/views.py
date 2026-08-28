@@ -1,5 +1,9 @@
+import datetime as dt
+
+from django.db.models import Q
 from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -9,11 +13,70 @@ from .models import Activity
 from .serializers import ActivityDetailSerializer, ActivityListSerializer
 
 
+class ActivityPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
 class ActivityList(AthleteScopedMixin, generics.ListAPIView):
+    """Filtered and paginated.
+
+    Filters are applied in the database rather than in the client: an athlete with
+    three years of history should not download all of it to look at last week.
+    """
+
     serializer_class = ActivityListSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = ActivityPagination
     # select_related on the one-to-one avoids a query per row for the metrics.
     queryset = Activity.objects.select_related("metrics").order_by("-started_at")
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        params = self.request.query_params
+
+        if sport := params.get("sport"):
+            queryset = queryset.filter(sport=sport)
+
+        if params.get("ran") == "true":
+            # Activities containing actual running, which is not the same as
+            # activities Garmin labelled "running".
+            queryset = queryset.filter(metrics__run_block_count__gt=0)
+        elif params.get("ran") == "false":
+            queryset = queryset.filter(
+                Q(metrics__isnull=True) | Q(metrics__run_block_count=0)
+            )
+
+        for param, lookup in (("from", "local_date__gte"), ("to", "local_date__lte")):
+            if raw := params.get(param):
+                try:
+                    queryset = queryset.filter(**{lookup: dt.date.fromisoformat(raw)})
+                except ValueError:
+                    pass  # a malformed date filters nothing rather than 500ing
+
+        return queryset
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def activity_facets(request):
+    """The values worth offering as filters, and how many each would return.
+
+    Computed from the athlete's own data: offering "cycling" to someone who has never
+    cycled is a control that only ever returns nothing.
+    """
+    base = Activity.objects.filter(athlete=request.user.athlete)
+    sports = {}
+    for sport in base.values_list("sport", flat=True):
+        sports[sport] = sports.get(sport, 0) + 1
+
+    return Response({
+        "sports": [{"value": k, "count": v} for k, v in sorted(sports.items(), key=lambda x: -x[1])],
+        "with_running": base.filter(metrics__run_block_count__gt=0).count(),
+        "total": base.count(),
+        "earliest": base.order_by("local_date").values_list("local_date", flat=True).first(),
+    })
 
 
 class ActivityDetail(AthleteScopedMixin, generics.RetrieveAPIView):

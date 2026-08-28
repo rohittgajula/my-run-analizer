@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .calendar_views import calendar
 from .views import (
     RaceDetail, RaceList, plan_weeks, predictions, today_mode, today_session_view,
 )
@@ -11,4 +12,5 @@ urlpatterns = [
     path("plan/predictions/", predictions, name="plan-predictions"),
     path("plan/weeks/", plan_weeks, name="plan-weeks"),
     path("plan/session/", today_session_view, name="plan-session"),
+    path("plan/calendar/", calendar, name="plan-calendar"),
 ]

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { AuthProvider, useAuth } from './lib/AuthContext'
 import { Shell } from './components/Shell'
 import Activities from './pages/Activities'
+import Calendar from './pages/Calendar'
 import Chat from './pages/Chat'
 import ActivityDetail from './pages/ActivityDetail'
 import Health from './pages/Health'
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="/coach" element={<RequireAuth><Chat /></RequireAuth>} />
           <Route path="/activities" element={<RequireAuth><Activities /></RequireAuth>} />
           <Route path="/activities/:id" element={<RequireAuth><ActivityDetail /></RequireAuth>} />
+          <Route path="/calendar" element={<RequireAuth><Calendar /></RequireAuth>} />
           <Route path="/health" element={<RequireAuth><Health /></RequireAuth>} />
           <Route path="/plan" element={<RequireAuth><Plan /></RequireAuth>} />
           <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />

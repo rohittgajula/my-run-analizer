@@ -4,7 +4,7 @@
 > session reads. If something here contradicts the code, the code wins and this file is
 > stale — say so.
 
-Last updated: **2026-08-28** · Status: **M4 live — coaching, chat, run analysis and activity charts.** Pagination, filtering, calendar and editable race dates are outstanding.
+Last updated: **2026-08-28** · Status: **M4 complete.** Coaching, chat, run analysis, charts, filtering, pagination, calendar and editable races all live. M5 (validators, evals) next.
 
 ---
 
@@ -285,6 +285,14 @@ separately:
 Neither reaches the ideal, and the plan says so rather than inventing a peak it cannot
 safely reach — the caps outrank the target, always. Expected outcome is a run/walk
 finish, stated plainly.
+
+### Everything recalculates from the races
+
+The plan, today's mode, the calendar and the prediction are all **computed on read**,
+never stored. Editing a race date therefore rebuilds all of them — the only work in
+the UI is invalidating the queries holding the old answer. A stored plan would drift
+from the data it was derived from, and reconciling that drift is a class of bug this
+avoids entirely.
 
 ### Chat, and why it is safe
 

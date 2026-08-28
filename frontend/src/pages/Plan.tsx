@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/auth'
 import { Card, Stat } from '../components/Stat'
+import { Races } from '../components/Races'
 
 type Race = { id: number; name: string; date: string; distance_km: number; is_target: boolean }
 type PlanToday = { date: string; mode: string; weeks_out: number | null; days_to_race: number | null; note: string; race: Race | null }
@@ -75,7 +76,6 @@ const MODE_MEANING: Record<string, string> = {
 
 export default function Plan() {
   const today = useQuery({ queryKey: ['plan-today'], queryFn: () => api<PlanToday>('/plan/today/') })
-  const races = useQuery({ queryKey: ['races'], queryFn: () => api<Race[]>('/races/') })
   const predictions = useQuery({
     queryKey: ['predictions'],
     queryFn: () => api<Prediction[]>('/plan/predictions/'),
@@ -144,28 +144,7 @@ export default function Plan() {
         </Card>
       )}
 
-      <Card title="Races" description="One target race anchors the plan. Others get their own taper and recovery without moving it.">
-        {races.data?.length ? (
-          <ul className="racelist">
-            {races.data.map((race) => (
-              <li key={race.id}>
-                <span>
-                  <strong>{race.name}</strong>
-                  {race.is_target && <span className="pill">target</span>}
-                </span>
-                <span className="muted">
-                  {new Date(`${race.date}T00:00:00`).toLocaleDateString(undefined, {
-                    day: 'numeric', month: 'long', year: 'numeric',
-                  })}{' '}
-                  · {race.distance_km} km
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="muted">No races yet.</p>
-        )}
-      </Card>
+      <Races />
 
       {weeks.data && (
         <Card
