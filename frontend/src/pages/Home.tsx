@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api, type Activity, type DailyMetrics } from '../lib/auth'
 import { useAuth } from '../lib/AuthContext'
 import { Card, Stat } from '../components/Stat'
+import { Coach } from '../components/Coach'
 import { JudgedBars, Ring, TrendLine } from '../components/Charts'
 import { day, duration, metres } from '../lib/format'
 import {
@@ -65,7 +66,11 @@ export default function Home() {
         </p>
       </header>
 
-      {/* Readiness first, because it is the only thing here that should change what
+      {/* The coaching read comes first: a page of numbers with no interpretation is
+          the thing this dashboard was, and the thing it should not be. */}
+      <Coach />
+
+      {/* Readiness next, because it is the only metric here that should change what
           you do in the next few hours. */}
       <div className="grid grid-4">
         <Card title="Training readiness">

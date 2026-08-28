@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.ingest",
     "apps.activities",
     "apps.planning",
+    "apps.coaching",
 ]
 
 MIDDLEWARE = [
@@ -172,21 +173,29 @@ CELERY_TASK_QUEUES_NAMES = ["garmin", "metrics", "ai", "planning"]
 GARMIN_TOKEN_DIR = os.environ.get("GARMIN_TOKEN_DIR", "/app/.garmin")
 
 # --- AI ----------------------------------------------------------------------
-# Model IDs are never hardcoded anywhere in application code. Operations name a
-# TIER; the tier resolves to an ID here. Upgrading a model is an .env edit.
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-AI_PROVIDER = os.environ.get("AI_PROVIDER", "gemini")
+# One provider is active at a time. Operations name a TIER, never a model ID, so
+# switching provider or upgrading a model is an .env edit rather than a code change.
+AI_PROVIDER = os.environ.get("AI_PROVIDER", "openai")
 
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+# Second provider, added at M6 to prove the abstraction seam is real.
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+
+# Provider-neutral names: only one provider is live, and operations resolve through
+# the tier map below rather than reaching for a vendor-specific setting.
 AI_MODELS = {
-    "lite": os.environ.get("GEMINI_LITE_MODEL", ""),
-    "fast": os.environ.get("GEMINI_FAST_MODEL", ""),
-    "coach": os.environ.get("GEMINI_COACH_MODEL", ""),
-    "deep": os.environ.get("GEMINI_DEEP_MODEL", ""),
+    "lite": os.environ.get("AI_LITE_MODEL", ""),
+    "fast": os.environ.get("AI_FAST_MODEL", ""),
+    "coach": os.environ.get("AI_COACH_MODEL", ""),
+    "deep": os.environ.get("AI_DEEP_MODEL", ""),
 }
 
+# journal_extract is deliberately NOT on `lite`. It reads casual, code-switched
+# Hindi/English written straight after a run, and it is where pain gets detected —
+# the hardest reading task in the system and the one with safety consequences.
 AI_MODEL_TIERS = {
-    "journal_extract": "lite",
+    "journal_extract": "fast",
+    "guidance": "coach",
     "run_analysis": "fast",
     "weekly_review": "coach",
     "plan_generation": "coach",
@@ -195,7 +204,7 @@ AI_MODEL_TIERS = {
 }
 
 AI_TIMEOUT_SEC = int(os.environ.get("AI_TIMEOUT_SEC", "60"))
-AI_MAX_RETRIES = int(os.environ.get("AI_MAX_RETRIES", "3"))
+AI_MAX_RETRIES = int(os.environ.get("AI_MAX_RETRIES", "2"))
 
 # --- Training safety ---------------------------------------------------------
 # Thresholds live here, not scattered through the planner. Every one of these is a

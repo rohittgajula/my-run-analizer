@@ -4,7 +4,7 @@
 > session reads. If something here contradicts the code, the code wins and this file is
 > stale — say so.
 
-Last updated: **2026-08-28** · Status: **M3 complete — calendar, prediction, generator and readiness. M4 (the AI layer) next.**
+Last updated: **2026-08-28** · Status: **M4 coaching layer live against real data.** Activity charts, pagination, filtering, calendar and editable race dates are outstanding.
 
 ---
 
@@ -270,7 +270,7 @@ the four model IDs there** — nothing reads a model name from code.
 
 ## Current state
 
-**M0–M3 done.** Accounts, Garmin ingestion, the metrics engine, the race
+**M0–M3 done, M4 partly.** Accounts, Garmin ingestion, the metrics engine, the race
 calendar, finish prediction, the plan generator and the readiness layer all work
 against real data. **207 tests pass.**
 
@@ -285,6 +285,24 @@ separately:
 Neither reaches the ideal, and the plan says so rather than inventing a peak it cannot
 safely reach — the caps outrank the target, always. Expected outcome is a run/walk
 finish, stated plainly.
+
+### The AI layer
+
+Live and grounded. One real call costs **$0.020** (1,593 in / 1,404 out on
+`gpt-5.6-terra`, ~22 s). Cached on `input_hash` covering context + prompt version +
+model, so re-asking the same question is free — which during development is most of
+the traffic. Every call is logged including failures, with token counts taken from
+`usage`, never estimated from string length.
+
+A per-athlete budget of 200 calls/month sits in `services.py`. That is a money limit,
+not a rate limit: every athlete spends the same prepaid balance.
+
+The context is **~450 tokens of derived state** — never raw activities. The naive
+version costs roughly 20× more and gives worse answers because the signal drowns.
+
+**Order of operations is the design:** safety gate → cache → model → validation →
+store. The gate runs before the model, not after; a gate that only filters output is
+one you have already walked through.
 
 **Volume and continuous capacity are progressed separately, and that matters.** Adding a
 fourth short session raises weekly volume without moving continuous capacity at all, and
@@ -390,6 +408,12 @@ better than a constant that looks like a measurement.
 - **`npm run build` failed on TS narrowing** in a hoisted `async function` capturing a
   nullable state value. Arrow consts are created after the guard, so narrowing holds.
 - **The day picker wrapped**, stretching Sunday to full width. Grid, not `flex-wrap`.
+- **The entire OpenAI configuration silently reverted.** The `settings.py` AI block,
+  the compose passthrough and the `openai` dependency were all lost during later
+  edits, and nothing failed until a paid call was attempted three milestones later —
+  every test passed throughout. `tests/test_config.py` now asserts that every tier
+  resolves to a model, the active provider has a key, and no model ID is hardcoded.
+  Configuration only exercised by a paid API call is configuration that breaks quietly.
 - **Login rejected a correct password.** Registration checks duplicates
   case-*insensitively*, but Django's `authenticate()` is case-*sensitive*, so
   registering as "Rohit" and signing in as "rohit" failed with "incorrect username or
