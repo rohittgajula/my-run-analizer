@@ -161,6 +161,15 @@ def sync_athlete(athlete: Athlete, limit: int = 20) -> SyncResult:
             result.imported += 1
             result.activity_ids.append(activity.pk)
 
+            # Hand straight to the metrics queue rather than waiting for the sweep.
+            # Queued, not called: segmentation must not be able to fail a sync.
+            try:
+                from apps.activities.tasks import derive_one
+
+                derive_one.delay(activity.pk)
+            except Exception:  # noqa: BLE001 — no broker in tests or a one-off script
+                logger.debug("could not queue derivation for %s", activity.pk)
+
         except DuplicateActivity:
             result.skipped += 1
         except Exception as exc:  # noqa: BLE001 — one bad activity must not stop the sync

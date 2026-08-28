@@ -4,7 +4,7 @@
 > session reads. If something here contradicts the code, the code wins and this file is
 > stale — say so.
 
-Last updated: **2026-08-28** · Status: **M5 complete.** Coaching, chat, run analysis, charts, filtering, pagination, calendar and editable races all live. M6 (a second provider behind the same seam) next.
+Last updated: **2026-08-28** · Status: **M7 complete.** M6 skipped by decision. Coaching, chat, run analysis, charts, filtering, pagination, calendar and editable races all live. M6 skipped. Remaining: the pre-launch hardening pass in [docs/HOSTING.md](docs/HOSTING.md).
 
 ---
 
@@ -285,6 +285,34 @@ separately:
 Neither reaches the ideal, and the plan says so rather than inventing a peak it cannot
 safely reach — the caps outrank the target, always. Expected outcome is a run/walk
 finish, stated plainly.
+
+### The pipeline
+
+`docker compose up -d` now runs seven services: the extra one is a **dedicated Garmin
+worker at concurrency 1**. Garmin rate-limits by IP and every athlete's sync leaves
+from one address, so overlapping syncs are what triggers a block — and a block affects
+everyone, not whoever caused it.
+
+```
+05:30  ingest.sync_all      queues each athlete 3 min apart, plus jitter
+       ingest.sync_one  ->  derive_one, queued straight onto the metrics queue
+*/20   activities.derive_stale   anything not at the current ALGORITHM_VERSION
+*/30   coaching.analyse_ready    segmented runs that have been journalled
+Sun 18:00  coaching.weekly_reviews
+```
+
+**A 429 trips a global circuit breaker** held in Redis for 45 minutes, so every worker
+sees it. A dead token is *not* retried — retrying burns requests against an address
+Garmin is already watching — the athlete is marked disconnected instead.
+
+**The journal gate has two escapes so it cannot deadlock:** a 36-hour grace period
+from *import* (not from the run — you can only write about a session once it is in the
+system), and runs already more than 4 days old on arrival skip the wait entirely,
+because nobody journals a session from three weeks ago.
+
+Verified live: bumping `ALGORITHM_VERSION` marked all 18 activities stale, the sweep
+queued them, and the worker re-derived every one within 12 seconds without touching
+Garmin.
 
 ### Validation and evals
 

@@ -84,7 +84,21 @@ services:
   worker:
     build: ./backend
     image: my-run-analizer-backend
-    command: celery -A config worker -l info -Q celery,garmin,metrics,ai,planning
+    command: celery -A config worker -l info -Q celery,metrics,ai,planning
+    environment: *backend_env
+    volumes:
+      - ./backend:/app
+      - garmin_tokens:/app/.garmin
+    depends_on:
+      backend: { condition: service_healthy }
+
+  # Garmin gets its own worker at concurrency 1. Garmin rate-limits by IP and every
+  # athlete's sync leaves from this one address, so overlapping syncs are exactly what
+  # triggers a block — and a block affects everyone, not just whoever caused it.
+  garmin-worker:
+    build: ./backend
+    image: my-run-analizer-backend
+    command: celery -A config worker -l info -Q garmin --concurrency=1
     environment: *backend_env
     volumes:
       - ./backend:/app

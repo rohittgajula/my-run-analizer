@@ -156,6 +156,16 @@ CORS_ALLOW_CREDENTIALS = True
 
 # --- Celery ------------------------------------------------------------------
 REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")
+
+# Redis-backed so the Garmin circuit breaker is shared across workers. A per-process
+# cache would let each worker discover the rate limit separately, which is how you
+# turn one block into several.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": REDIS_URL,
+    }
+}
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TASK_SERIALIZER = "json"
@@ -163,6 +173,42 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# A task that is retried must not double-write, so acks_late is paired with
+# idempotent tasks rather than used to paper over non-idempotent ones.
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+
+# Queue separation matters: a stuck AI call must not block the next Garmin sync, and
+# Garmin work is deliberately serialised (see docs/HOSTING.md) while metrics are not.
+CELERY_TASK_ROUTES = {
+    "ingest.*": {"queue": "garmin"},
+    "activities.*": {"queue": "metrics"},
+    "coaching.*": {"queue": "ai"},
+    "planning.*": {"queue": "planning"},
+}
+
+from celery.schedules import crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    "sync-every-morning": {
+        "task": "ingest.sync_all",
+        # Staggered inside the task by athlete id; this is only the window opening.
+        "schedule": crontab(hour=5, minute=30),
+    },
+    "derive-anything-stale": {
+        "task": "activities.derive_stale",
+        "schedule": crontab(minute="*/20"),
+    },
+    "analyse-what-is-ready": {
+        "task": "coaching.analyse_ready",
+        "schedule": crontab(minute="*/30"),
+    },
+    "weekly-review-sunday-evening": {
+        "task": "coaching.weekly_reviews",
+        "schedule": crontab(hour=18, minute=0, day_of_week=0),
+    },
+}
 
 # Queue separation matters from the start: a stuck AI call must not block the next
 # Garmin sync. M7 routes tasks onto these.
