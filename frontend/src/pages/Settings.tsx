@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import { ApiError, type Athlete } from '../lib/auth'
 import { DayPicker } from '../components/DayPicker'
+import { GarminCard } from '../components/GarminCard'
 import { Field } from '../components/Field'
 
 /** Seconds per km <-> "m:ss", because nobody thinks in 645. */
@@ -96,6 +97,8 @@ export default function Settings() {
           />
         </Field>
       </section>
+
+      <GarminCard />
 
       <section className="card">
         <h2>Training days</h2>

@@ -4,7 +4,7 @@
 > session reads. If something here contradicts the code, the code wins and this file is
 > stale — say so.
 
-Last updated: **2026-08-28** · Status: **M3a + M3b complete. Race calendar and prediction resolve over real data. M3c (plan generator) next.**
+Last updated: **2026-08-28** · Status: **M3a + M3b complete, plus wellness ingestion and the dashboard. M3c (plan generator) next.**
 
 ---
 
@@ -273,6 +273,10 @@ the four model IDs there** — nothing reads a model name from code.
 **M0–M2, M3a, M3b done.** Accounts, Garmin ingestion, the metrics engine, the race
 calendar and finish prediction all work against real data. **109 tests pass.**
 
+**28 days of Garmin wellness ingested**: sleep, HRV, training readiness, acute load,
+resting HR, stress, Body Battery, respiration, VO₂max. Shown on Today and Health as
+trends with a plain-language reading, never a bare number.
+
 Races stored: **Bajaj Pune 10K, 13 Dec 2026 (target)** and **January 10K, 3 Jan 2027**.
 Today resolves to `build`, 15 weeks out — a STANDARD runway for a 10K.
 
@@ -336,6 +340,20 @@ as an interval session rather than a regression.
   smart recording on long activities, where assuming one sample per second understates
   distance.
 
+### Findings in the wellness data
+
+**Sleep is the loudest signal**, as it was in `run-project`. Around 21–25 Aug: sleep of
+3–5 h, HRV down to 33 ms, and **training readiness of 1/100 on two consecutive days** —
+while acute load was at its highest (137). HRV then recovered 33 → 47 ms as sleep
+returned to 7–8 h. Any plan that ignores this will prescribe into a hole.
+
+**`chronic_load` was fabricated and is now discarded.** `run-project` derives it from
+`acwrPercent` when Garmin omits it; on this account that produced exactly **100.0 every
+single day**, because the ratio and the acute value are the same number — the arithmetic
+is circular. ACWR computed from it would have been the acute load with a decimal point
+moved. The derivation is removed and the 28 fabricated rows were cleared. A gap is
+better than a constant that looks like a measurement.
+
 ### Bugs caught during M1a/M1b, each of which would have cost an afternoon
 
 - **`ingest_fit` marked failures inside its own `@transaction.atomic`**, so
@@ -353,6 +371,14 @@ as an interval session rather than a regression.
 - **`npm run build` failed on TS narrowing** in a hoisted `async function` capturing a
   nullable state value. Arrow consts are created after the guard, so narrowing holds.
 - **The day picker wrapped**, stretching Sunday to full width. Grid, not `flex-wrap`.
+- **Login rejected a correct password.** Registration checks duplicates
+  case-*insensitively*, but Django's `authenticate()` is case-*sensitive*, so
+  registering as "Rohit" and signing in as "rohit" failed with "incorrect username or
+  password" — true and useless. Login now resolves to the stored spelling first.
+- **Concurrent refresh logged the user out.** Rotation blacklists the previous token
+  immediately, so React StrictMode's double-invoked effect had the second request
+  present a token the first had just revoked. The single-flight guard now clears on the
+  next tick rather than synchronously.
 
 ### Four things fixed during M1a, each of which would have cost an afternoon
 

@@ -14,6 +14,7 @@ localStorage it would be valid until expiry with no way to revoke it.
 
 from django.conf import settings
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -73,7 +74,15 @@ class LoginView(APIView):
     def post(self, request):
         username = (request.data.get("username") or "").strip()
         password = request.data.get("password") or ""
-        user = authenticate(request, username=username, password=password)
+
+        # Registration rejects duplicates case-INSENSITIVELY, but Django's
+        # authenticate() is case-SENSITIVE. Registering as "Rohit" and signing in as
+        # "rohit" therefore failed with "incorrect username or password", which is
+        # both true and useless. Resolve to the stored spelling first.
+        stored = User.objects.filter(username__iexact=username).first()
+        user = authenticate(
+            request, username=stored.username if stored else username, password=password
+        )
 
         # Deliberately identical for an unknown username and a wrong password.
         # Distinguishing them tells an attacker which usernames exist.

@@ -49,6 +49,7 @@ class SyncResult:
     failed: int = 0
     errors: list[str] = field(default_factory=list)
     activity_ids: list[int] = field(default_factory=list)
+    wellness_days: int = 0
 
     def as_dict(self) -> dict:
         return {
@@ -57,6 +58,7 @@ class SyncResult:
             "failed": self.failed,
             "errors": self.errors,
             "activity_ids": self.activity_ids,
+            "wellness_days": self.wellness_days,
         }
 
 
@@ -168,6 +170,15 @@ def sync_athlete(athlete: Athlete, limit: int = 20) -> SyncResult:
             logger.exception("garmin sync failed for activity %s", activity_id)
             result.failed += 1
             result.errors.append(f"{activity_id}: {exc}")
+
+    # Wellness is pulled after activities so a rate limit costs the cheaper half.
+    try:
+        from .garmin_wellness import sync_wellness
+
+        result.wellness_days = sync_wellness(athlete, client, days=28)["days_written"]
+    except Exception as exc:  # noqa: BLE001 — activities already landed; keep them
+        logger.exception("wellness sync failed")
+        result.errors.append(f"wellness: {exc}")
 
     athlete.garmin_connected = True
     athlete.garmin_last_sync = timezone.now()

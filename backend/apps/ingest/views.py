@@ -8,7 +8,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 
+from apps.athletes.mixins import AthleteScopedMixin
+from rest_framework import generics
+
 from .garmin import GarminAuthError, GarminRateLimited, check_connection, sync_athlete
+from .models import DailyMetrics
+from .serializers import DailyMetricsSerializer
 from .garmin_connect import MFARequired, connect, disconnect
 
 logger = logging.getLogger(__name__)
@@ -72,3 +77,19 @@ def garmin_sync_view(request):
         return Response({"detail": str(exc)}, status=status.HTTP_429_TOO_MANY_REQUESTS)
     except GarminAuthError as exc:
         return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DailyMetricsList(AthleteScopedMixin, generics.ListAPIView):
+    """Wellness history, newest first. `?days=N` limits the window."""
+
+    serializer_class = DailyMetricsSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = DailyMetrics.objects.all()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        try:
+            days = min(int(self.request.query_params.get("days", 28)), 365)
+        except (TypeError, ValueError):
+            days = 28
+        return queryset[:days]

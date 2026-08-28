@@ -44,6 +44,12 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Rotation blacklists the previous refresh token immediately, so two concurrent
+ * refreshes are not merely wasteful — the second presents a token the first just
+ * revoked and gets a 401, logging the user out. React StrictMode double-invokes
+ * effects in development, so this is the normal case, not an edge one.
+ */
 async function refreshAccess(): Promise<string | null> {
   if (!refreshInFlight) {
     refreshInFlight = fetch(`${BASE}/auth/refresh/`, {
@@ -58,7 +64,12 @@ async function refreshAccess(): Promise<string | null> {
       })
       .catch(() => null)
       .finally(() => {
-        refreshInFlight = null
+        // Cleared on the next tick, not synchronously: a caller that started while
+        // the request was resolving would otherwise begin a second rotation with a
+        // cookie the browser has not yet replaced.
+        setTimeout(() => {
+          refreshInFlight = null
+        }, 0)
       })
   }
   return refreshInFlight
@@ -174,4 +185,32 @@ export type Activity = {
   segmentation_version: number | null
   metrics: ActivityMetrics | null
   segments?: Segment[]
+}
+
+
+export type DailyMetrics = {
+  metric_date: string
+  sleep_seconds: number | null
+  sleep_need_seconds: number | null
+  sleep_score: number | null
+  deep_sleep_seconds: number | null
+  rem_sleep_seconds: number | null
+  awake_seconds: number | null
+  hrv_overnight_avg: number | null
+  hrv_status: string
+  training_readiness: number | null
+  training_readiness_level: string
+  training_status: string
+  acute_load: number | null
+  chronic_load: number | null
+  acwr: number | null
+  resting_hr: number | null
+  steps: number | null
+  stress_avg: number | null
+  body_battery_high: number | null
+  body_battery_low: number | null
+  intensity_minutes: number | null
+  spo2_avg: number | null
+  respiration_avg: number | null
+  vo2max: number | null
 }

@@ -55,3 +55,73 @@ class RawFitFile(OwnedByAthlete):
     @staticmethod
     def hash_bytes(data: bytes) -> str:
         return hashlib.sha256(data).hexdigest()
+
+
+class DailyMetrics(OwnedByAthlete):
+    """One day of Garmin wellness data.
+
+    Every field is nullable. Garmin's unofficial endpoints return different shapes by
+    device, subscription tier, and whether the watch was worn overnight — a partial
+    row is far more useful than no row, and a missing metric must stay distinguishable
+    from a measured zero.
+    """
+
+    metric_date = models.DateField(db_index=True)
+
+    # Sleep. Garmin dates a night by the MORNING IT ENDS, so this row's sleep is the
+    # sleep *before* that day's session. Written notes are the opposite — they come
+    # from the evening before. Getting this backwards misattributes both.
+    sleep_seconds = models.IntegerField(null=True, blank=True)
+    sleep_need_seconds = models.IntegerField(null=True, blank=True)
+    sleep_score = models.IntegerField(null=True, blank=True)
+    deep_sleep_seconds = models.IntegerField(null=True, blank=True)
+    rem_sleep_seconds = models.IntegerField(null=True, blank=True)
+    awake_seconds = models.IntegerField(null=True, blank=True)
+    sleep_start_local = models.DateTimeField(null=True, blank=True)
+    sleep_end_local = models.DateTimeField(null=True, blank=True)
+
+    # Recovery and load
+    hrv_overnight_avg = models.IntegerField(null=True, blank=True)
+    hrv_status = models.CharField(max_length=24, blank=True)
+    training_readiness = models.IntegerField(null=True, blank=True)
+    training_readiness_level = models.CharField(max_length=32, blank=True)
+    training_status = models.CharField(max_length=40, blank=True)
+    acute_load = models.FloatField(null=True, blank=True)
+    chronic_load = models.FloatField(null=True, blank=True)
+
+    # Daily totals
+    resting_hr = models.IntegerField(null=True, blank=True)
+    steps = models.IntegerField(null=True, blank=True)
+    stress_avg = models.IntegerField(null=True, blank=True)
+    body_battery_high = models.IntegerField(null=True, blank=True)
+    body_battery_low = models.IntegerField(null=True, blank=True)
+    floors_climbed = models.IntegerField(null=True, blank=True)
+    intensity_minutes = models.IntegerField(null=True, blank=True)
+    spo2_avg = models.IntegerField(null=True, blank=True)
+    respiration_avg = models.FloatField(null=True, blank=True)
+    vo2max = models.FloatField(null=True, blank=True)
+
+    # Verbatim payloads, so a field nobody thought to map can be backfilled from
+    # history later without re-fetching from Garmin.
+    raw = models.JSONField(default=dict, blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-metric_date"]
+        verbose_name_plural = "daily metrics"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["athlete", "metric_date"], name="uniq_athlete_metric_date"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.metric_date} · sleep {self.sleep_score} · HRV {self.hrv_overnight_avg}"
+
+    @property
+    def acwr(self) -> float | None:
+        """Acute:chronic workload ratio. Above ~1.5 is the classic spike warning."""
+        if self.acute_load and self.chronic_load:
+            return round(self.acute_load / self.chronic_load, 2)
+        return None

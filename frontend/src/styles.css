@@ -150,40 +150,6 @@ code {
 
 strong { color: var(--text); font-weight: 600; }
 
-/* --- nav ------------------------------------------------------------------ */
-
-.nav {
-  position: relative;
-  z-index: 2;
-  border-bottom: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-}
-.nav-inner {
-  max-width: 46rem;
-  margin: 0 auto;
-  padding: 0.9rem 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-.nav-brand { font-weight: 650; color: var(--text); text-decoration: none; letter-spacing: -0.01em; }
-.nav-links { display: flex; align-items: center; gap: 1.1rem; }
-.nav-links a, .linkish {
-  color: var(--muted);
-  text-decoration: none;
-  font: inherit;
-  font-size: 0.92rem;
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-}
-.nav-links a:hover, .linkish:hover { color: var(--text); }
-
-a { color: var(--text); text-underline-offset: 3px; }
-
 /* --- layout --------------------------------------------------------------- */
 
 .page-narrow { max-width: 26rem; }
@@ -346,3 +312,164 @@ input[readonly] { color: var(--muted); background: var(--surface-hi); }
 .blocks td:first-child, .blocks th:first-child { padding-right: 0.8rem; }
 .blocks tr.is-run td { color: var(--text); }
 .blocks tr:not(.is-run) td { color: var(--muted); }
+
+/* --- shell: sidebar + main ------------------------------------------------- */
+
+.shell { display: flex; min-height: 100dvh; }
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100dvh;
+  width: 13.5rem;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.4rem 0.9rem;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  z-index: 3;
+}
+
+.brand { font-weight: 650; letter-spacing: -0.01em; padding: 0 0.6rem 1.2rem; }
+.sidebar nav { display: flex; flex-direction: column; gap: 0.15rem; }
+
+.navitem {
+  display: block;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.45rem;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.92rem;
+}
+.navitem:hover { color: var(--text); background: var(--surface-hi); }
+.navitem-on { color: var(--bg); background: var(--ui); font-weight: 600; }
+.navitem-on:hover { color: var(--bg); background: var(--ui); }
+
+.sidebar-foot { margin-top: auto; text-align: left; padding: 0.5rem 0.65rem; font-size: 0.85rem; }
+
+.main { flex: 1; min-width: 0; position: relative; z-index: 1; }
+
+.topbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0.85rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.conn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.conn:hover { color: var(--text); }
+.conn-text { letter-spacing: 0.02em; }
+.dot-pending { background: var(--muted); box-shadow: 0 0 0 3px rgba(110, 110, 122, 0.15); }
+
+/* The page inside the shell manages its own width. */
+.shell .page { max-width: 68rem; padding: 1.75rem 1.5rem 4rem; }
+
+/* --- card grid ------------------------------------------------------------- */
+
+.grid { display: grid; gap: 0.875rem; margin-bottom: 0.875rem; }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
+.grid-4 { grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); }
+.grid.tight { gap: 1rem 1.25rem; margin-bottom: 0; }
+
+.card-wide { grid-column: 1 / -1; }
+.card-desc { color: var(--muted); font-size: 0.84rem; margin: -0.35rem 0 1rem; line-height: 1.5; }
+.card-foot { margin-top: 1rem; font-size: 0.85rem; }
+
+/* --- stat ------------------------------------------------------------------ */
+
+.stat-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+.stat-value { font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.stat-note { color: var(--muted); font-size: 0.8rem; margin-top: 0.4rem; line-height: 1.45; }
+
+.tone-data { color: var(--data); }
+.tone-ok { color: var(--ok); }
+.tone-warn { color: var(--warn); }
+.tone-bad { color: var(--bad); }
+
+/* --- ring gauge ------------------------------------------------------------ */
+
+.ring { position: relative; flex: none; }
+.ring-value {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1.35rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ring-row { display: flex; align-items: center; gap: 1.1rem; }
+
+/* --- charts ---------------------------------------------------------------- */
+
+.chart { height: 9.5rem; width: 100%; }
+.recharts-surface { overflow: visible; }
+
+/* --- plan ------------------------------------------------------------------ */
+
+.racelist { list-style: none; margin: 0; padding: 0; }
+.racelist li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.racelist li:first-child { border-top: 0; }
+
+.pill {
+  margin-left: 0.5rem;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--data);
+  border: 1px solid var(--data);
+  border-radius: 0.3rem;
+  padding: 0.05rem 0.35rem;
+  vertical-align: middle;
+}
+
+.todo { margin: 0.75rem 0 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.88rem; }
+.todo li { margin-bottom: 0.3rem; }
+
+/* --- mobile ---------------------------------------------------------------- */
+
+@media (max-width: 46rem) {
+  .shell { flex-direction: column; }
+  .sidebar {
+    position: static;
+    height: auto;
+    width: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.15rem;
+    overflow-x: auto;
+    padding: 0.7rem 0.9rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand { display: none; }
+  .sidebar nav { flex-direction: row; gap: 0.15rem; }
+  .navitem { white-space: nowrap; font-size: 0.85rem; padding: 0.4rem 0.6rem; }
+  .sidebar-foot { display: none; }
+  .shell .page { padding: 1.25rem 1rem 3rem; }
+}
